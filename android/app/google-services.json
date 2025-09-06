@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "118026964260",
+    "project_id": "pawradise-4e975",
+    "storage_bucket": "pawradise-4e975.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:118026964260:android:2cbaf1caaaea94e5f0b7b1",
+        "android_client_info": {
+          "package_name": "com.example.pawradise"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCg8bzynbVhqyHkHr6b4YWmapusXUS4gbI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
