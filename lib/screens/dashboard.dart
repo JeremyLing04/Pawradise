@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants.dart';
+import 'community/community_screen.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -11,6 +12,15 @@ class Dashboard extends StatefulWidget {
 class _DashboardState extends State<Dashboard> {
   int _selectedIndex = 0;
 
+  // 定义页面列表
+  static final List<Widget> _pages = [
+    _DashboardContent(), // 首页内容 (索引0)
+    CommunityScreen(),   // 社区页面 (索引1)
+    Placeholder(),    // 日程页面 (索引2)
+    Placeholder(),         // 地图页面 (索引3)
+    Placeholder(),     // 个人页面 (索引4)
+  ];
+
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
   }
@@ -18,38 +28,29 @@ class _DashboardState extends State<Dashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Pawradise'),
-        centerTitle: true,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.notifications, color: Colors.white),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildMoodSection(),
-            SizedBox(height: 24),
-            _buildPetsSection(),
-            SizedBox(height: 24),
-            _buildRemindersBubble(),
-            SizedBox(height: 24),
-            _buildHealthStats(),
-            SizedBox(height: 24),
-            _buildCommunityPreview(),
-            SizedBox(height: 24),
-            _buildQuickActions(),
-          ],
-        ),
-      ),
+      appBar: _selectedIndex == 0 
+          ? AppBar(
+              title: const Text('Pawradise'),
+              centerTitle: true,
+              foregroundColor: Colors.white,
+              backgroundColor: AppColors.primary,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.notifications, color: Colors.white),
+                  onPressed: () {},
+                ),
+              ],
+            )
+          : null,
+      body: _pages[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
-        items: AppBottomBar.items,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Community'),
+          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Schedule'),
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ],
         currentIndex: _selectedIndex,
         selectedItemColor: AppColors.primary,
         unselectedItemColor: Colors.grey,
@@ -58,22 +59,49 @@ class _DashboardState extends State<Dashboard> {
       ),
     );
   }
+}
+
+// 首页内容组件
+class _DashboardContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildMoodSection(),
+          const SizedBox(height: 24),
+          _buildPetsSection(),
+          const SizedBox(height: 24),
+          _buildRemindersBubble(),
+          const SizedBox(height: 24),
+          _buildHealthStats(),
+          const SizedBox(height: 24),
+          _buildCommunityPreview(context),
+          const SizedBox(height: 24),
+          _buildQuickActions(context),
+        ],
+      ),
+    );
+  }
 
   // 顶部问候 + 心情选择
   Widget _buildMoodSection() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
       child: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Hello, ShengHan!",
+            const Text("Hello, ShengHan!",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            SizedBox(height: 12),
-            Text("How are your pets today?",
+            const SizedBox(height: 12),
+            const Text("How are your pets today?",
                 style: TextStyle(color: AppColors.textSecondary)),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -94,11 +122,11 @@ class _DashboardState extends State<Dashboard> {
       children: [
         CircleAvatar(
           radius: 22,
-          backgroundColor: AppColors.secondary,
-          child: Text(emoji, style: TextStyle(fontSize: 22)),
+          backgroundColor: AppColors.secondary.withOpacity(0.2),
+          child: Text(emoji, style: const TextStyle(fontSize: 22)),
         ),
-        SizedBox(height: 6),
-        Text(label, style: TextStyle(fontSize: 12)),
+        const SizedBox(height: 6),
+        Text(label, style: const TextStyle(fontSize: 12)),
       ],
     );
   }
@@ -108,17 +136,17 @@ class _DashboardState extends State<Dashboard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("My Pets", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        SizedBox(height: 12),
+        const Text("My Pets", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
         SizedBox(
           height: 130,
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              _buildPetCard("Buddy", "Golden Retriever"),
-              SizedBox(width: 12),
-              _buildPetCard("Milo", "Corgi"),
-              SizedBox(width: 12),
+              _buildPetCard("Buddy", "Golden Retriever", "🐕"),
+              const SizedBox(width: 12),
+              _buildPetCard("Milo", "Corgi", "🐶"),
+              const SizedBox(width: 12),
               _buildAddPetCard(),
             ],
           ),
@@ -127,23 +155,24 @@ class _DashboardState extends State<Dashboard> {
     );
   }
 
-  Widget _buildPetCard(String name, String breed) {
+  Widget _buildPetCard(String name, String breed, String emoji) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
       child: Container(
         width: 110,
-        padding: EdgeInsets.all(12),
+        padding: const EdgeInsets.all(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircleAvatar(
               radius: 25,
-              backgroundColor: AppColors.secondary,
-              child: Icon(Icons.pets, color: AppColors.primary),
+              backgroundColor: AppColors.secondary.withOpacity(0.2),
+              child: Text(emoji, style: const TextStyle(fontSize: 20)),
             ),
-            SizedBox(height: 8),
-            Text(name, style: TextStyle(fontWeight: FontWeight.bold)),
-            Text(breed, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+            const SizedBox(height: 8),
+            Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(breed, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
           ],
         ),
       ),
@@ -153,15 +182,16 @@ class _DashboardState extends State<Dashboard> {
   Widget _buildAddPetCard() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
       child: Container(
         width: 110,
-        padding: EdgeInsets.all(12),
+        padding: const EdgeInsets.all(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.add_circle, size: 32, color: AppColors.primary),
-            SizedBox(height: 8),
-            Text("Add Pet", style: TextStyle(fontSize: 12)),
+            const SizedBox(height: 8),
+            const Text("Add Pet", style: TextStyle(fontSize: 12)),
           ],
         ),
       ),
@@ -172,21 +202,22 @@ class _DashboardState extends State<Dashboard> {
   Widget _buildRemindersBubble() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Today's Reminders",
+            const Text("Today's Reminders",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Wrap(
               spacing: 12,
               runSpacing: 12,
               children: [
-                _buildBubble("🐕 Walk Buddy", "5:00 PM", Colors.orange.shade200),
-                _buildBubble("💊 Medicine", "7:00 PM", Colors.green.shade200),
-                _buildBubble("🍖 Dinner", "6:00 PM", Colors.pink.shade200),
+                _buildBubble("🐕 Walk Buddy", "5:00 PM", Colors.orange.shade100),
+                _buildBubble("💊 Medicine", "7:00 PM", Colors.green.shade100),
+                _buildBubble("🍖 Dinner", "6:00 PM", Colors.pink.shade100),
               ],
             )
           ],
@@ -197,7 +228,7 @@ class _DashboardState extends State<Dashboard> {
 
   Widget _buildBubble(String task, String time, Color color) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(30),
@@ -205,8 +236,8 @@ class _DashboardState extends State<Dashboard> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(task, style: TextStyle(fontWeight: FontWeight.bold)),
-          Text(time, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          Text(task, style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(time, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
         ],
       ),
     );
@@ -216,17 +247,18 @@ class _DashboardState extends State<Dashboard> {
   Widget _buildHealthStats() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
       child: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Buddy’s Condition",
+            const Text("Buddy's Condition",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 12),
-            Text("70% - Healthy & Active",
+            const SizedBox(height: 12),
+            const Text("70% - Healthy & Active",
                 style: TextStyle(color: AppColors.textSecondary)),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
@@ -246,31 +278,38 @@ class _DashboardState extends State<Dashboard> {
       children: [
         CircleAvatar(
           radius: 30,
-          backgroundColor: color.withOpacity(0.3),
+          backgroundColor: color.withOpacity(0.2),
           child: Text("$percent%",
               style: TextStyle(fontWeight: FontWeight.bold, color: color)),
         ),
-        SizedBox(height: 6),
-        Text(label, style: TextStyle(fontSize: 12)),
+        const SizedBox(height: 6),
+        Text(label, style: const TextStyle(fontSize: 12)),
       ],
     );
   }
 
-  // 社区动态
-  Widget _buildCommunityPreview() {
+  // 社区动态预览
+  Widget _buildCommunityPreview(BuildContext context) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("Community Updates",
+                const Text("Community Updates",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                TextButton(onPressed: () {}, child: Text("View All")),
+                TextButton(
+                  onPressed: () {
+                    // 切换到社区页面
+                    _switchToCommunity(context);
+                  }, 
+                  child: const Text("View All")
+                ),
               ],
             ),
             _buildCommunityPost("🐾 Missing Dog in Central Park", "15 likes"),
@@ -287,24 +326,39 @@ class _DashboardState extends State<Dashboard> {
       contentPadding: EdgeInsets.zero,
       leading: Icon(Icons.forum, color: AppColors.primary),
       title: Text(title),
-      trailing: Text(likes, style: TextStyle(color: AppColors.textSecondary)),
+      trailing: Text(likes, style: const TextStyle(color: AppColors.textSecondary)),
+      onTap: () {
+        // 点击帖子也可以跳转到社区
+        _switchToCommunity(navigatorKey.currentContext!);
+      },
     );
   }
 
   // 快速操作
-  Widget _buildQuickActions() {
+  Widget _buildQuickActions(BuildContext context) {
     return GridView.count(
       shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: 2,
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
       childAspectRatio: 1.6,
       children: [
-        _buildActionButton(Icons.chat, "Ask PawPal", () {}),
-        _buildActionButton(Icons.add_circle, "New Post", () {}),
-        _buildActionButton(Icons.calendar_today, "Add Event", () {}),
-        _buildActionButton(Icons.place, "Find Places", () {}),
+        _buildActionButton(Icons.chat, "Ask PawPal", () {
+          // 这里可以跳转到AI聊天页面
+        }),
+        _buildActionButton(Icons.add_circle, "New Post", () {
+          // 切换到社区页面
+          _switchToCommunity(context);
+        }),
+        _buildActionButton(Icons.calendar_today, "Add Event", () {
+          // 切换到日程页面
+          _switchToSchedule(context);
+        }),
+        _buildActionButton(Icons.place, "Find Places", () {
+          // 切换到地图页面
+          _switchToMap(context);
+        }),
       ],
     );
   }
@@ -312,17 +366,43 @@ class _DashboardState extends State<Dashboard> {
   Widget _buildActionButton(IconData icon, String label, VoidCallback onPressed) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
       child: TextButton(
         onPressed: onPressed,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, size: 30, color: AppColors.primary),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(label, textAlign: TextAlign.center),
           ],
         ),
       ),
     );
   }
+
+  // 导航辅助方法
+  void _switchToCommunity(BuildContext context) {
+    final dashboardState = context.findAncestorStateOfType<_DashboardState>();
+    dashboardState?.setState(() {
+      dashboardState._selectedIndex = 1;
+    });
+  }
+
+  void _switchToSchedule(BuildContext context) {
+    final dashboardState = context.findAncestorStateOfType<_DashboardState>();
+    dashboardState?.setState(() {
+      dashboardState._selectedIndex = 2;
+    });
+  }
+
+  void _switchToMap(BuildContext context) {
+    final dashboardState = context.findAncestorStateOfType<_DashboardState>();
+    dashboardState?.setState(() {
+      dashboardState._selectedIndex = 3;
+    });
+  }
 }
+
+// 全局导航key（可选）
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
