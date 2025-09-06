@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; // 这个文件会自动生成
+import 'screens/community/community_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(); // 初始化 Firebase
-  runApp(const MyApp());
+  
+  // 初始化Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Pawradise',
-      home: Scaffold(
-        appBar: AppBar(title: const Text('Pawradise')),
-        body: const Center(child: Text('Firebase Ready 🚀')),
-      ),
+      home: CommunityScreen(), // 你的社区页面
     );
   }
 }
