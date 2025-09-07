@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'create_post_screen.dart';
 import 'post_detail_screen.dart';
 import 'widgets/post_card.dart';
+import '../../models/post_model.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -114,13 +115,15 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   padding: const EdgeInsets.all(16),
                   itemCount: snapshot.data!.docs.length,
                   itemBuilder: (context, index) {
-                    final post = snapshot.data!.docs[index];
+                    final doc = snapshot.data!.docs[index];
+                    final post = PostModel.fromFireStore(doc);
+                    
                     return PostCard(
-                      post: post,
+                      post: post, 
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => PostDetailScreen(postId: post.id),
+                          builder: (context) => PostDetailScreen(postId: doc.id),
                         ),
                       ),
                     );
