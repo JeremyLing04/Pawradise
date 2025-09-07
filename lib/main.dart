@@ -35,7 +35,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Pawradise',
       theme: AppTheme.lightTheme,
-      initialRoute: '/',
+      initialRoute: '/dashboard',
       routes: {
         '/': (context) => Login(),
         '/register': (context) => Register(),
