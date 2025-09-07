@@ -17,16 +17,16 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   bool _isLoading = false;
 
   final _postTypes = [
-    {'value': 'discussion', 'label': '讨论'},
-    {'value': 'alert', 'label': '警报'},
-    {'value': 'event', 'label': '活动'},
+    {'value': 'discussion', 'label': 'Discussion'},
+    {'value': 'alert', 'label': 'Alert'},
+    {'value': 'event', 'label': 'Event'},
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('发布新帖子'),
+        title: const Text('New Post'),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
       ),
@@ -40,7 +40,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               DropdownButtonFormField<String>(
                 value: _selectedType,
                 decoration: const InputDecoration(
-                  labelText: '帖子类型',
+                  labelText: 'Post Category',
                   border: OutlineInputBorder(),
                 ),
                 items: _postTypes.map((type) {
@@ -57,12 +57,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
-                  labelText: '标题',
+                  labelText: 'Title',
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return '请输入标题';
+                    return 'Please input title';
                   }
                   return null;
                 },
@@ -73,14 +73,14 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               TextFormField(
                 controller: _contentController,
                 decoration: const InputDecoration(
-                  labelText: '内容',
+                  labelText: 'Content',
                   border: OutlineInputBorder(),
                   alignLabelWithHint: true,
                 ),
                 maxLines: 5,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return '请输入内容';
+                    return 'Please input content';
                   }
                   return null;
                 },
@@ -99,7 +99,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   ),
                   child: _isLoading
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('发布帖子'),
+                      : const Text('Create Post'),
                 ),
               ),
             ],
@@ -136,7 +136,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       Navigator.pop(context); // 返回上一页
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('发布失败: $e')),
+        SnackBar(content: Text('Post Failed: $e')),
       );
     } finally {
       setState(() => _isLoading = false);
