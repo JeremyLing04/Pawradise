@@ -20,10 +20,7 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.pawradise"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -32,8 +29,6 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -41,4 +36,17 @@ android {
 
 flutter {
     source = "../.."
+}
+
+repositories {
+    google()
+    mavenCentral()
+    maven { url = uri("https://storage.googleapis.com/download.flutter.io") }
+}
+
+dependencies {
+    // Google Maps dependencies
+    implementation("com.google.android.gms:play-services-maps:17.0.1")  // Required for Google Maps
+    implementation("com.google.maps.android:maps-utils-ktx:2.0.0")         // Optional: For utilities like polylines, circles, etc.
+    implementation("com.google.android.gms:play-services-location:17.0.0")  // For location services
 }
