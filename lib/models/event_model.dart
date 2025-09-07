@@ -10,6 +10,7 @@ class Event {
   final DateTime scheduledTime;
   final bool isCompleted;
   final DateTime createdAt;
+  final int notificationMinutes;
 
   Event({
     required this.id,
@@ -21,6 +22,7 @@ class Event {
     required this.scheduledTime,
     this.isCompleted = false,
     required this.createdAt,
+    this.notificationMinutes = 30,
   });
 
   Map<String, dynamic> toMap() {
@@ -34,6 +36,7 @@ class Event {
       'scheduledTime': scheduledTime.millisecondsSinceEpoch,
       'isCompleted': isCompleted ? 1 : 0,
       'createdAt': createdAt.millisecondsSinceEpoch,
+      'notificationMinutes': notificationMinutes,
     };
   }
 
@@ -51,6 +54,7 @@ class Event {
       scheduledTime: DateTime.fromMillisecondsSinceEpoch(map['scheduledTime']),
       isCompleted: map['isCompleted'] == 1,
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt']),
+      notificationMinutes: map['notificationMinutes'] ?? 30,
     );
   }
 }
@@ -96,3 +100,4 @@ extension EventTypeExtension on EventType {
     }
   }
 }
+

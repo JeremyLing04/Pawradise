@@ -30,7 +30,8 @@ class DatabaseService {
         type TEXT NOT NULL,
         scheduledTime INTEGER NOT NULL,
         isCompleted INTEGER NOT NULL,
-        createdAt INTEGER NOT NULL
+        createdAt INTEGER NOT NULL,
+        notificationMinutes INTEGER DEFAULT 30
       )
     ''');
   }

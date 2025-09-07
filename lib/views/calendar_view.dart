@@ -203,6 +203,7 @@ class _AddEventDialogState extends State<AddEventDialog> {
   final _descriptionController = TextEditingController();
   DateTime _selectedTime = DateTime.now();
   EventType _selectedType = EventType.other;
+  int _notificationMinutes = 30;
 
   @override
   Widget build(BuildContext context) {
@@ -254,6 +255,30 @@ class _AddEventDialogState extends State<AddEventDialog> {
                 trailing: const Icon(Icons.edit),
                 onTap: () => _selectTime(context),
               ),
+              const SizedBox(height: 16),
+              Consumer<EventProvider>(
+                builder: (context, eventProvider, child) {
+                  return DropdownButtonFormField<int>(
+                    value: _notificationMinutes,
+                    items: EventProvider.notificationTimeOptions.map((minutes) {
+                      return DropdownMenuItem(
+                        value: minutes,
+                        child: Text(
+                          EventProvider.getNotificationTimeText(minutes),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _notificationMinutes = value!;
+                      });
+                    },
+                    decoration: const InputDecoration(
+                      labelText: 'Reminder Time',
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -294,8 +319,8 @@ class _AddEventDialogState extends State<AddEventDialog> {
     if (_formKey.currentState!.validate()) {
       final event = Event(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: 'current_user_id', // 在实际应用中从认证系统获取
-        petId: 'default_pet_id', // 从宠物选择器获取
+        userId: 'current_user_id',
+        petId: 'default_pet_id',
         title: _titleController.text,
         description: _descriptionController.text.isEmpty
             ? null
@@ -304,6 +329,7 @@ class _AddEventDialogState extends State<AddEventDialog> {
         scheduledTime: _selectedTime,
         isCompleted: false,
         createdAt: DateTime.now(),
+        notificationMinutes: _notificationMinutes,
       );
 
       Provider.of<EventProvider>(context, listen: false).addEvent(event);
