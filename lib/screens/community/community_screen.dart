@@ -57,59 +57,18 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Community Board'),
+        title: const Text(
+          'Community Board',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true, // 标题居中
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
-        actions: [
-          // 过滤器下拉菜单
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              setState(() {
-                _selectedFilter = value;
-              });
-            },
-            itemBuilder: (BuildContext context) {
-              return _filterOptions.map((String filter) {
-                return PopupMenuItem<String>(
-                  value: filter,
-                  child: Row(
-                    children: [
-                      Icon(
-                        _getFilterIcon(filter),
-                        color: _selectedFilter == filter 
-                            ? Colors.green 
-                            : Colors.grey,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(_getFilterLabel(filter)),
-                    ],
-                  ),
-                );
-              }).toList();
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  Icon(
-                    _getFilterIcon(_selectedFilter),
-                    color: Colors.white,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    _getFilterLabel(_selectedFilter),
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                  ),
-                  const Icon(Icons.arrow_drop_down, color: Colors.white),
-                ],
-              ),
-            ),
-          ),
-        ],
+        // 移除了actions中的PopupMenuButton
       ),
       body: Column(
         children: [
-          // 快速过滤器按钮（可选）
+          // 快速过滤器按钮栏
           _buildQuickFilterBar(),
           
           // 帖子列表

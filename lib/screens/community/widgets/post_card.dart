@@ -20,23 +20,16 @@ class PostCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 帖子标题和类型
-              Row(
-                children: [
-                  _buildPostTypeBadge(data['type']),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      data['title'],
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              _buildPostTypeBadge(data['type']),
               const SizedBox(height: 8),
+
+              Text(
+                data['title'],
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               
               // 帖子内容预览
               Text(
@@ -81,9 +74,9 @@ class PostCard extends StatelessWidget {
     };
     
     final labels = {
-      'alert': '警报',
-      'discussion': '讨论',
-      'event': '活动',
+      'alert': 'alert',
+      'discussion': 'discussion',
+      'event': 'event',
     };
 
     return Container(
