@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:like_button/like_button.dart';
+import 'package:pawradise/screens/community/widgets/like_button_widget.dart';
 import '../../../models/post_model.dart'; // 导入模型
 
 class PostCard extends StatelessWidget {
@@ -83,14 +85,12 @@ class PostCard extends StatelessWidget {
                   ),
                   
                   // 互动统计
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
-                      Icon(Icons.thumb_up, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${post.likes}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      LikeButtonWidget(
+                        postId: post.id!,
+                        initialLikes: post.likes,
                       ),
                       const SizedBox(width: 16),
                       Icon(Icons.comment, size: 16, color: Colors.grey[600]),

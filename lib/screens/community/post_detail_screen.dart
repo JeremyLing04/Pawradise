@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:pawradise/screens/community/widgets/like_button_widget.dart';
 import '../../models/post_model.dart';
 
 class PostDetailScreen extends StatelessWidget {
@@ -134,15 +135,9 @@ class PostDetailScreen extends StatelessWidget {
                       // 互动按钮
                       Row(
                         children: [
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.thumb_up_outlined),
-                            color: Colors.green,
-                            iconSize: 28,
-                          ),
-                          Text(
-                            '${post.likes}',
-                            style: const TextStyle(fontSize: 16),
+                          LikeButtonWidget(
+                            postId: post.id!, // 使用从 Firestore 获取的帖子ID
+                            initialLikes: post.likes,
                           ),
                           const SizedBox(width: 20),
                           IconButton(
