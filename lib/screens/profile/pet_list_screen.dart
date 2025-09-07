@@ -1,46 +1,67 @@
+// screens/profile/pet_list_screen.dart
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // 添加导入
 import '../../constants.dart';
 import '../../models/pet_model.dart';
+import '../../services/pet_service.dart';
 import 'add_edit_pet_screen.dart';
 
 class PetListScreen extends StatefulWidget {
-  const PetListScreen({super.key});
+  const PetListScreen({super.key}); // 移除 required userId 参数
 
   @override
   State<PetListScreen> createState() => _PetListScreenState();
 }
 
 class _PetListScreenState extends State<PetListScreen> {
-  List<Pet> _pets = [];
   final String _userName = "ShengHan";
+  final PetService _petService = PetService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  String? _userId;
 
   @override
   void initState() {
     super.initState();
-    _loadMockPets();
+    _getCurrentUser();
   }
 
-  void _loadMockPets() {
-    setState(() {
-      _pets = Pet.mockPets();
-    });
+  void _getCurrentUser() {
+    final user = _auth.currentUser;
+    if (user != null) {
+      setState(() {
+        _userId = user.uid;
+      });
+    }
   }
 
   void _navigateToAddPet() {
-    Navigator.pushNamed(context, '/pets/add');
-  }
-
-  void _navigateToEditPet(Pet pet) {
+    if (_userId == null) return;
+    
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddEditPetScreen(pet: pet),
+        builder: (context) => AddEditPetScreen(), 
+      ),
+    );
+  }
+
+  void _navigateToEditPet(Pet pet) {
+    if (_userId == null) return;
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddEditPetScreen(pet: pet), // 使用获取到的 userId
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_userId == null) {
+      return Center(child: CircularProgressIndicator(color: AppColors.accent));
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -64,22 +85,48 @@ class _PetListScreenState extends State<PetListScreen> {
         ],
       ),
       backgroundColor: AppColors.secondary,
-      body: Column(
-        children: [
-          _buildUserWelcome(),
-          Expanded(
-            child: _pets.isEmpty
-                ? _buildEmptyState()
-                : _buildPetList(),
-          ),
-        ],
+      body: StreamBuilder<List<Pet>>(
+        stream: _petService.getPetsByUserStream(_userId!),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator(color: AppColors.accent));
+          }
+          
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error, size: 50, color: Colors.red),
+                  SizedBox(height: 16),
+                  Text(
+                    'Error loading pets',
+                    style: TextStyle(fontSize: 18, color: AppColors.accent),
+                  ),
+                ],
+              ),
+            );
+          }
+          
+          final pets = snapshot.data ?? [];
+          
+          return Column(
+            children: [
+              _buildUserWelcome(pets),
+              Expanded(
+                child: pets.isEmpty
+                    ? _buildEmptyState()
+                    : _buildPetList(pets),
+              ),
+            ],
+          );
+        },
       ),
-      // 移除底部导航栏，因为由Dashboard管理
       bottomNavigationBar: null,
     );
   }
 
-  Widget _buildUserWelcome() {
+  Widget _buildUserWelcome(List<Pet> pets) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 24, vertical: 25),
       decoration: BoxDecoration(
@@ -146,9 +193,9 @@ class _PetListScreenState extends State<PetListScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                _pets.isEmpty 
+                pets.isEmpty 
                   ? 'Ready to welcome your first furry friend? 🐾' 
-                  : 'Caring for ${_pets.length} adorable pet${_pets.length > 1 ? 's' : ''} ❤️',
+                  : 'Caring for ${pets.length} adorable pet${pets.length > 1 ? 's' : ''} ❤️',
                 style: TextStyle(
                   fontSize: 15,
                   color: AppColors.accent,
@@ -165,12 +212,12 @@ class _PetListScreenState extends State<PetListScreen> {
   }
 
   // ✅ 宠物列表
-  Widget _buildPetList() {
+  Widget _buildPetList(List<Pet> pets) {
     return ListView.builder(
       padding: EdgeInsets.all(20),
-      itemCount: _pets.length,
+      itemCount: pets.length,
       itemBuilder: (context, index) {
-        return _buildPetCard(_pets[index]);
+        return _buildPetCard(pets[index]);
       },
     );
   }
@@ -258,26 +305,8 @@ class _PetListScreenState extends State<PetListScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: _getPetColor(pet),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.accent.withAlpha(60),
-                          blurRadius: 6,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.pets,
-                      size: 30,
-                      color: Colors.white,
-                    ),
-                  ),
+                  // 显示宠物图片或默认图标
+                  _buildPetImage(pet),
                   SizedBox(width: 16),
                   
                   Expanded(
@@ -330,7 +359,7 @@ class _PetListScreenState extends State<PetListScreen> {
                             ),
                           ],
                         ),
-                        if (pet.notes != null) ...[
+                        if (pet.notes != null && pet.notes!.isNotEmpty) ...[
                           SizedBox(height: 4),
                           Text(
                             '📝 ${pet.notes!}',
@@ -361,6 +390,52 @@ class _PetListScreenState extends State<PetListScreen> {
         ),
       ),
     );
+  }
+
+  // ✅ 显示宠物图片或默认图标
+  Widget _buildPetImage(Pet pet) {
+    if (pet.imageUrl != null && pet.imageUrl!.isNotEmpty) {
+      return Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: _getPetColor(pet),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.accent.withAlpha(60),
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ],
+          image: DecorationImage(
+            image: NetworkImage(pet.imageUrl!),
+            fit: BoxFit.cover,
+          ),
+        ),
+      );
+    } else {
+      return Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: _getPetColor(pet),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.accent.withAlpha(60),
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Icon(
+          Icons.pets,
+          size: 30,
+          color: Colors.white,
+        ),
+      );
+    }
   }
 
   // ✅ 根据宠物信息返回颜色
