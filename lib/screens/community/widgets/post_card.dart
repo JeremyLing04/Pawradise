@@ -4,7 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../models/post_model.dart'; // 导入模型
 
 class PostCard extends StatelessWidget {
-  final PostModel post; // 改为使用 PostModel
+  final PostModel post;
   final VoidCallback onTap;
 
   const PostCard({super.key, required this.post, required this.onTap});
