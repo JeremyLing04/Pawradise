@@ -31,6 +31,7 @@ class NotificationService {
     await createNotificationChannel();
   }
 
+  //schedule notification specific future time
   Future<void> scheduleNotification({
     required int id,
     required String title,
@@ -49,6 +50,7 @@ class NotificationService {
 
       final details = NotificationDetails(android: androidDetails);
 
+      //give notic in specify time
       await _notifications.zonedSchedule(
         id,
         title,

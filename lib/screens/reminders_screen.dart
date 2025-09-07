@@ -4,6 +4,7 @@ import '../providers/event_provider.dart';
 import '../models/event_model.dart';
 import 'package:intl/intl.dart';
 import '../constants.dart';
+import '../screens/delete_event.dart';
 
 class RemindersView extends StatelessWidget {
   const RemindersView({super.key});
@@ -11,9 +12,7 @@ class RemindersView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Reminders'),
-      ),
+      appBar: AppBar(title: const Text('Reminders')),
       body: Consumer<EventProvider>(
         builder: (context, eventProvider, child) {
           final upcomingEvents = eventProvider.events
@@ -21,9 +20,7 @@ class RemindersView extends StatelessWidget {
               .toList();
 
           if (upcomingEvents.isEmpty) {
-            return const Center(
-              child: Text('No upcoming reminders'),
-            );
+            return const Center(child: Text('No upcoming reminders'));
           }
 
           return ListView.builder(
@@ -54,7 +51,9 @@ class ReminderItem extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(DateFormat('MMM d, yyyy - hh:mm a').format(event.scheduledTime)),
+            Text(
+              DateFormat('MMM d, yyyy - hh:mm a').format(event.scheduledTime),
+            ),
             if (event.description != null) Text(event.description!),
           ],
         ),
@@ -70,23 +69,7 @@ class ReminderItem extends StatelessWidget {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Delete Reminder'),
-          content: const Text('Are you sure you want to delete this reminder?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Provider.of<EventProvider>(context, listen: false).deleteEvent(event.id);
-                Navigator.pop(context);
-              },
-              child: const Text('Delete', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
+        return DeleteEventDialog(event: event); // 使用新的对话框
       },
     );
   }

@@ -1,3 +1,4 @@
+// screens/calendar_screen.dart
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
@@ -5,6 +6,9 @@ import '../models/event_model.dart';
 import '../providers/event_provider.dart';
 import 'package:provider/provider.dart';
 import '../constants.dart';
+import 'edit_event.dart';
+import 'delete_event.dart';
+import 'add_event.dart';
 
 class CalendarView extends StatefulWidget {
   const CalendarView({super.key});
@@ -44,6 +48,7 @@ class _CalendarViewState extends State<CalendarView> {
                 _focusedDay = focusedDay;
               });
             },
+            //switch month/week
             onFormatChanged: (format) {
               setState(() {
                 _calendarFormat = format;
@@ -61,6 +66,7 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
+  //event specific day
   List<Event> _getEventsForDay(DateTime day, BuildContext context) {
     final eventProvider = Provider.of<EventProvider>(context, listen: false);
     return eventProvider.events
@@ -99,6 +105,7 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
+  //single event card in the list
   Widget _buildEventItem(Event event, BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -115,6 +122,7 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
+  //mark completed/incomplete
   void _toggleEventCompletion(
     Event event,
     bool completed,
@@ -164,6 +172,13 @@ class _CalendarViewState extends State<CalendarView> {
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
+                _editEvent(event, context);
+              },
+              child: const Text('Edit', style: TextStyle(color: Colors.blue)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
                 _deleteEvent(event, context);
               },
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
@@ -174,8 +189,22 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
+  void _editEvent(Event event, BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return EditEventDialog(event: event);
+      },
+    );
+  }
+
   void _deleteEvent(Event event, BuildContext context) {
-    Provider.of<EventProvider>(context, listen: false).deleteEvent(event.id);
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return DeleteEventDialog(event: event);
+      },
+    );
   }
 
   void _showAddEventDialog(BuildContext context) {
@@ -185,162 +214,5 @@ class _CalendarViewState extends State<CalendarView> {
         return AddEventDialog(selectedDate: _selectedDay ?? DateTime.now());
       },
     );
-  }
-}
-
-class AddEventDialog extends StatefulWidget {
-  final DateTime selectedDate;
-
-  const AddEventDialog({super.key, required this.selectedDate});
-
-  @override
-  State<AddEventDialog> createState() => _AddEventDialogState();
-}
-
-class _AddEventDialogState extends State<AddEventDialog> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  DateTime _selectedTime = DateTime.now();
-  EventType _selectedType = EventType.other;
-  int _notificationMinutes = 30;
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Add New Event'),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 3,
-              ),
-              DropdownButtonFormField<EventType>(
-                value: _selectedType,
-                items: EventType.values.map((type) {
-                  return DropdownMenuItem(
-                    value: type,
-                    child: Text(type.displayName),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedType = value!;
-                  });
-                },
-                decoration: const InputDecoration(labelText: 'Event Type'),
-              ),
-              ListTile(
-                title: Text(
-                  'Date: ${DateFormat('MMM d, yyyy').format(widget.selectedDate)}',
-                ),
-                subtitle: Text(
-                  'Time: ${DateFormat('hh:mm a').format(_selectedTime)}',
-                ),
-                trailing: const Icon(Icons.edit),
-                onTap: () => _selectTime(context),
-              ),
-              const SizedBox(height: 16),
-              Consumer<EventProvider>(
-                builder: (context, eventProvider, child) {
-                  return DropdownButtonFormField<int>(
-                    value: _notificationMinutes,
-                    items: EventProvider.notificationTimeOptions.map((minutes) {
-                      return DropdownMenuItem(
-                        value: minutes,
-                        child: Text(
-                          EventProvider.getNotificationTimeText(minutes),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _notificationMinutes = value!;
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      labelText: 'Reminder Time',
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () => _saveEvent(context),
-          child: const Text('Save'),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(_selectedTime),
-    );
-
-    if (picked != null) {
-      setState(() {
-        _selectedTime = DateTime(
-          widget.selectedDate.year,
-          widget.selectedDate.month,
-          widget.selectedDate.day,
-          picked.hour,
-          picked.minute,
-        );
-      });
-    }
-  }
-
-  void _saveEvent(BuildContext context) {
-    if (_formKey.currentState!.validate()) {
-      final event = Event(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: 'current_user_id',
-        petId: 'default_pet_id',
-        title: _titleController.text,
-        description: _descriptionController.text.isEmpty
-            ? null
-            : _descriptionController.text,
-        type: _selectedType,
-        scheduledTime: _selectedTime,
-        isCompleted: false,
-        createdAt: DateTime.now(),
-        notificationMinutes: _notificationMinutes,
-      );
-
-      Provider.of<EventProvider>(context, listen: false).addEvent(event);
-      Navigator.pop(context);
-    }
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
   }
 }
