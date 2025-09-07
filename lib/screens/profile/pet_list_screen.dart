@@ -39,34 +39,9 @@ class _PetListScreenState extends State<PetListScreen> {
     );
   }
 
-  // ✅ 底部导航栏点击处理
-  void _onBottomNavTapped(int index) {
-    if (index == 4) return; // 当前已经是Profile页，不需要跳转
-    
-    // 根据索引跳转到不同页面
-    switch (index) {
-      case 0: // Home
-        Navigator.pushReplacementNamed(context, '/dashboard');
-        break;
-      case 1: // Community
-        // TODO: 跳转到社区页面
-        print('Navigate to Community');
-        break;
-      case 2: // Schedule
-        // TODO: 跳转到日程页面
-        print('Navigate to Schedule');
-        break;
-      case 3: // Map
-        // TODO: 跳转到地图页面
-        print('Navigate to Map');
-        break;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ✅ 自定义AppBar，不使用AppHeader
       appBar: AppBar(
         title: Text(
           'My Furry Friends',
@@ -88,15 +63,10 @@ class _PetListScreenState extends State<PetListScreen> {
           ),
         ],
       ),
-
-      // ✅ 使用constants中的背景色
       backgroundColor: AppColors.secondary,
-      
       body: Column(
         children: [
-          // ✅ 重新设计的用户欢迎区域
           _buildUserWelcome(),
-          
           Expanded(
             child: _pets.isEmpty
                 ? _buildEmptyState()
@@ -104,22 +74,8 @@ class _PetListScreenState extends State<PetListScreen> {
           ),
         ],
       ),
-
-      // ✅ 底部导航栏 
-      bottomNavigationBar: ClipRRect(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(15),  // 左上角圆角
-          topRight: Radius.circular(15), // 右上角圆角
-        ),
-        child: BottomNavigationBar(
-          items: AppBottomBar.items,
-          currentIndex: 4, // 当前选中Profile页
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.textSecondary,
-          onTap: _onBottomNavTapped,
-          type: BottomNavigationBarType.fixed,
-        ),
-      ),
+      // 移除底部导航栏，因为由Dashboard管理
+      bottomNavigationBar: null,
     );
   }
 
