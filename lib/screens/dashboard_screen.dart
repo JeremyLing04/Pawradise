@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../constants.dart';
-import 'community/community_screen.dart'; // 确保导入CommunityScreen
+import 'community/community_screen.dart';
+import '';
+import '';
+import 'profile/pet_list_screen.dart'; // 修改为pet_list_screen
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -12,13 +15,13 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
-  // 定义页面列表 - 从 dev 版本的 dashboard.dart 中引入的关键概念
-  static final List<Widget> _pages = [
-    _DashboardContent(), // 首页内容 (索引0)
-    CommunityScreen(),   // 社区页面 (索引1)
-    PlaceholderWidget(), // 日程页面 (索引2) - 使用自定义的占位组件
-    PlaceholderWidget(), // 地图页面 (索引3)
-    PlaceholderWidget(), // 宠物页面 (索引4)
+  // 定义所有页面 - 修改第4个页面为PetListScreen
+  final List<Widget> _pages = [
+    _DashboardContent(),    // 首页内容 (索引0)
+    CommunityScreen(),      // 社区页面 (索引1)
+    Placeholder(),       // 日程页面 (索引2)
+    Placeholder(),            // 地图页面 (索引3)
+    PetListScreen(),        // 修改：宠物列表页面 (索引4)
   ];
 
   void _onItemTapped(int index) {
@@ -28,27 +31,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppHeader.buildAppBar(),
-      body: _pages[_selectedIndex], // 使用页面列表来切换body
-      bottomNavigationBar: ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(15),
-          topRight: Radius.circular(15),
-        ),
-        child: BottomNavigationBar(
-          items: AppBottomBar.items,
-          currentIndex: _selectedIndex, // 绑定当前选中索引
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.textSecondary,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-        ),
-      ),
+      appBar: _selectedIndex == 0 ? AppHeader.buildAppBar() : null,
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: _buildBottomNavigationBar(),
+    );
+  }
+
+  // 底部导航栏
+  BottomNavigationBar _buildBottomNavigationBar() {
+    return BottomNavigationBar(
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Community'),
+        BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Schedule'),
+        BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
+        BottomNavigationBarItem(icon: Icon(Icons.pets), label: 'Pets'), // 修改图标和标签
+      ],
+      currentIndex: _selectedIndex,
+      selectedItemColor: AppColors.primary,
+      unselectedItemColor: AppColors.textSecondary,
+      onTap: _onItemTapped,
+      type: BottomNavigationBarType.fixed,
     );
   }
 }
 
-// 首页内容组件 - 保留你原有的精美布局
+// 首页内容组件（保持原来的Dashboard布局）
 class _DashboardContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -108,13 +116,13 @@ class _DashboardContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
-                  _buildPetsSection(),
+                  _buildPetsSection(context), // 传递context用于导航
                   const SizedBox(height: 24),
                   _buildRemindersBubble(),
                   const SizedBox(height: 24),
-                  _buildCommunityPreview(context), // 传递context用于导航
+                  _buildCommunityPreview(context),
                   const SizedBox(height: 24),
-                  _buildQuickActions(context), // 传递context用于导航
+                  _buildQuickActions(context),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -125,8 +133,8 @@ class _DashboardContent extends StatelessWidget {
     );
   }
 
-  // 宠物卡片横向列表 - 使用primary颜色
-  Widget _buildPetsSection() {
+  // 宠物卡片横向列表 - 添加导航
+  Widget _buildPetsSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -145,7 +153,7 @@ class _DashboardContent extends StatelessWidget {
               const SizedBox(width: 12),
               _buildPetCard("Milo", "Corgi"),
               const SizedBox(width: 12),
-              _buildAddPetCard(),
+              _buildAddPetCard(context), // 传递context
             ],
           ),
         ),
@@ -169,8 +177,6 @@ class _DashboardContent extends StatelessWidget {
               child: Icon(Icons.pets, size: 32, color: AppColors.primary),
             ),
             const SizedBox(height: 8),
-
-            // 用 Expanded 让文字部分自动压缩
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -205,31 +211,40 @@ class _DashboardContent extends StatelessWidget {
     );
   }
 
-  Widget _buildAddPetCard() {
-    return Card(
-      elevation: 4,
-      color: AppColors.primary.withOpacity(0.7),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        width: 130,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_circle, size: 40, color: AppColors.accent),
-            const SizedBox(height: 12),
-            Text("Add Pet", style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: AppColors.accent
-            )),
-          ],
+  Widget _buildAddPetCard(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        // 导航到宠物列表页面
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => PetListScreen()),
+        );
+      },
+      child: Card(
+        elevation: 4,
+        color: AppColors.primary.withOpacity(0.7),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          width: 130,
+          padding: const EdgeInsets.all(16),
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add_circle, size: 40, color: Colors.white),
+              SizedBox(height: 12),
+              Text("Add Pet", style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.white
+              )),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // 今日提醒 - 使用secondary颜色
+  // 今日提醒
   Widget _buildRemindersBubble() {
     return Card(
       elevation: 4,
@@ -294,7 +309,7 @@ class _DashboardContent extends StatelessWidget {
     );
   }
 
-  // 社区动态 - 使用accent颜色
+  // 社区动态
   Widget _buildCommunityPreview(BuildContext context) {
     return Card(
       elevation: 4,
@@ -363,13 +378,12 @@ class _DashboardContent extends StatelessWidget {
         ],
       ),
       onTap: () {
-        // 点击帖子也可以跳转到社区
-        // 注意：这里需要获取到DashboardScreen的context，所以通过参数传递
+        _switchToCommunity(navigatorKey.currentContext!);
       },
     );
   }
 
-  // 快速操作 - 使用不同颜色交替
+  // 快速操作
   Widget _buildQuickActions(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,7 +402,9 @@ class _DashboardContent extends StatelessWidget {
           mainAxisSpacing: 16,
           childAspectRatio: 1.8,
           children: [
-            _buildActionButton(Icons.chat, "Ask PawPal", AppColors.primary, () {}),
+            _buildActionButton(Icons.chat, "Ask PawPal", AppColors.primary, () {
+              // TODO: 跳转到AI聊天
+            }),
             _buildActionButton(Icons.add_circle, "New Post", AppColors.secondary, () {
               _switchToCommunity(context);
             }),
@@ -436,7 +452,7 @@ class _DashboardContent extends StatelessWidget {
     return brightness > 0.5 ? AppColors.textPrimary : AppColors.background;
   }
 
-  // 导航辅助方法 - 从dev版本中提取
+  // 导航辅助方法
   void _switchToCommunity(BuildContext context) {
     final dashboardState = context.findAncestorStateOfType<_DashboardScreenState>();
     dashboardState?.setState(() {
@@ -459,13 +475,5 @@ class _DashboardContent extends StatelessWidget {
   }
 }
 
-// 自定义占位组件，替代原来的Placeholder()
-class PlaceholderWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text('Page under development', 
-            style: TextStyle(fontSize: 18, color: Colors.grey)),
-    );
-  }
-}
+// 全局导航key
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
