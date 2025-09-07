@@ -36,7 +36,6 @@ class DatabaseService {
     ''');
   }
 
-  // 事件CRUD操作
   Future<int> insertEvent(Map<String, dynamic> event) async {
     final db = await database;
     return await db.insert('events', event);
