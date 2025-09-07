@@ -1,4 +1,5 @@
 // services/pet_service.dart
+// services/pet_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
@@ -7,36 +8,59 @@ import '../models/pet_model.dart';
 class PetService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
+  bool _hasIndexError = false;
 
   // 同步获取用户的所有宠物
-  Future<List<Pet>> getPetsByUser(String userId) async {
-    try {
-      final querySnapshot = await _firestore
-          .collection('pets')
-          .where('ownerId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
-          .get();
-
-      return querySnapshot.docs
-          .map((doc) => Pet.fromFirestore(doc))
-          .toList();
-    } catch (e) {
-      throw Exception('Failed to get pets: $e');
+  // 实时监听用户宠物的变化（Stream方式）- 修复版本
+    Stream<List<Pet>> getPetsByUserStream(String userId) {
+      try {
+        // 先尝试不使用排序，避免索引问题
+        return _firestore
+            .collection('pets')
+            .where('ownerId', isEqualTo: userId)
+            .snapshots()
+            .map((snapshot) {
+              final pets = snapshot.docs
+                  .map((doc) => Pet.fromFirestore(doc))
+                  .toList();
+              // 在客户端进行排序
+              pets.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+              return pets;
+            })
+            .handleError((error) {
+              print('Error in pet stream: $error');
+              // 返回空列表而不是抛出错误
+              return <Pet>[];
+            });
+      } catch (e) {
+        print('Exception in getPetsByUserStream: $e');
+        // 返回一个包含空列表的流
+        return Stream.value(<Pet>[]);
+      }
     }
-  }
 
-  // 实时监听用户宠物的变化（Stream方式）
-  Stream<List<Pet>> getPetsByUserStream(String userId) {
-    return _firestore
-        .collection('pets')
-        .where('ownerId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
+    // 同步获取用户的所有宠物 - 简化版本
+    Future<List<Pet>> getPetsByUser(String userId) async {
+      try {
+        final querySnapshot = await _firestore
+            .collection('pets')
+            .where('ownerId', isEqualTo: userId)
+            .get();
+
+        final pets = querySnapshot.docs
             .map((doc) => Pet.fromFirestore(doc))
-            .toList());
-  }
+            .toList();
+        
+        // 在客户端排序
+        pets.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return pets;
+      } catch (e) {
+        print('Error getting pets: $e');
+        return [];
+      }
+    }
 
+  // 其余方法保持不变...
   // 添加宠物
   Future<void> addPet(Pet pet, {File? imageFile}) async {
     try {

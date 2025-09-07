@@ -109,7 +109,7 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text('Confirm Delete'),
-        content: Text('Are you sure you want to delete ${widget.pet!.name}? This action cannot be undone.'),
+        content: Text('Are you sure you want to delete ${widget.pet!.name}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -416,10 +416,15 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
         filled: true,
         fillColor: Colors.grey.shade50,
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        // 添加以下属性来确保错误信息完整显示
+        errorStyle: TextStyle(
+          fontSize: 12, // 减小字体大小
+          height: 1.2, // 调整行高
+        ),
+        errorMaxLines: 2, // 允许最多2行错误文本
       ),
     );
   }
-
   String? _validateRequired(String? value) {
     if (value == null || value.isEmpty) {
       return 'This field is required';
@@ -429,14 +434,11 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
 
   String? _validateAge(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter age';
+      return 'Required';
     }
     final age = int.tryParse(value);
-    if (age == null || age <= 0) {
-      return 'Please enter a valid age';
-    }
-    if (age > 30) {
-      return 'That seems too old for a pet';
+    if (age == null || age <= 0 || age > 30) {
+      return 'Invalid age (1-30)';
     }
     return null;
   }
