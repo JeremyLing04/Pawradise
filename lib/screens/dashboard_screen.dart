@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pawradise/screens/map/map_screen.dart';
 import '../constants.dart';
 import 'community/community_screen.dart';
 import '';
@@ -20,7 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _DashboardContent(),    // 首页内容 (索引0)
     CommunityScreen(),      // 社区页面 (索引1)
     Placeholder(),       // 日程页面 (索引2)
-    Placeholder(),            // 地图页面 (索引3)
+    MapScreen(),            // 地图页面 (索引3)
     PetListScreen(),        // 修改：宠物列表页面 (索引4)
   ];
 
