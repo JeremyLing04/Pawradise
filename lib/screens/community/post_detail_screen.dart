@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../models/post_model.dart';
 
 class PostDetailScreen extends StatelessWidget {
   final String postId;
@@ -32,100 +34,172 @@ class PostDetailScreen extends StatelessWidget {
             return const Center(child: Text('Post does not exist.'));
           }
 
-          final post = snapshot.data!;
-          final data = post.data() as Map<String, dynamic>;
+          // 使用 PostModel.fromFirestore 创建模型实例
+          final post = PostModel.fromFireStore(snapshot.data!);
 
-          return Padding(
-            padding: const EdgeInsets.all(16),
+          return SingleChildScrollView(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // 帖子标题和类型
-                Text(
-                  data['title'],
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // 帖子内容
-                Text(
-                  data['content'],
-                  style: const TextStyle(fontSize: 16, height: 1.5),
-                ),
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: _getTypeColor(data['type']).withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
+                // 图片部分（如果有图片）
+                if (post.hasImage && post.imageUrl.isNotEmpty)
+                  _buildDetailImage(post.imageUrl),
+                
+                // 内容部分
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 帖子类型徽章
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _getTypeColor(post.type).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          _getTypeLabel(post.type),
+                          style: TextStyle(
+                            color: _getTypeColor(post.type),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
                       ),
-                      child: Text(
-                        _getTypeLabel(data['type']),
-                        style: TextStyle(
-                          color: _getTypeColor(data['type']),
+                      const SizedBox(height: 16),
+
+                      // 帖子标题
+                      Text(
+                        post.title,
+                        style: const TextStyle(
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                ),
-                const SizedBox(height: 24),
+                      const SizedBox(height: 16),
 
-                // 作者和时间信息
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 16,
-                      child: Text(data['authorName'][0]),
-                    ),
-                    const SizedBox(width: 8),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          data['authorName'],
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                      // 帖子内容
+                      Text(
+                        post.content,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          height: 1.6,
+                          color: Colors.black87,
                         ),
-                        Text(
-                          _formatTimestamp(data['createdAt']),
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
+                      ),
+                      const SizedBox(height: 24),
 
-                // 互动按钮
-                Row(
-                  children: [
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.thumb_up_outlined),
-                      color: Colors.green,
-                    ),
-                    Text(data['likes'].toString()),
-                    const SizedBox(width: 16),
-                    IconButton(
-                      onPressed: () {},
-                      icon: const Icon(Icons.comment_outlined),
-                      color: Colors.green,
-                    ),
-                    Text(data['comments'].toString()),
-                  ],
+                      // 作者和时间信息
+                      Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: Colors.green,
+                            child: Text(
+                              post.authorName[0],
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  post.authorName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  _formatDetailTimestamp(post.createdAt),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+
+                      // 互动按钮
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: () {},
+                            icon: const Icon(Icons.thumb_up_outlined),
+                            color: Colors.green,
+                            iconSize: 28,
+                          ),
+                          Text(
+                            '${post.likes}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(width: 20),
+                          IconButton(
+                            onPressed: () {},
+                            icon: const Icon(Icons.comment_outlined),
+                            color: Colors.green,
+                            iconSize: 28,
+                          ),
+                          Text(
+                            '${post.comments}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const Spacer(),
+                          if (post.type == 'alert')
+                            Chip(
+                              label: Text(
+                                post.isResolved ? 'Resolved' : 'Unresolved',
+                                style: const TextStyle(color: Colors.white),
+                              ),
+                              backgroundColor: post.isResolved ? Colors.green : Colors.red,
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  // 构建详情页图片
+  Widget _buildDetailImage(String imageUrl) {
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      width: double.infinity,
+      height: 300,
+      fit: BoxFit.cover,
+      placeholder: (context, url) => Container(
+        height: 300,
+        color: Colors.grey[200],
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      errorWidget: (context, url, error) => Container(
+        height: 300,
+        color: Colors.grey[200],
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error, size: 50, color: Colors.grey),
+            SizedBox(height: 8),
+            Text('Image load failed', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
       ),
     );
   }
@@ -146,7 +220,7 @@ class PostDetailScreen extends StatelessWidget {
     }[type] ?? type;
   }
 
-  String _formatTimestamp(Timestamp timestamp) {
+  String _formatDetailTimestamp(Timestamp timestamp) {
     final date = timestamp.toDate();
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
