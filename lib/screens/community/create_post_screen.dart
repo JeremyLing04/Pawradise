@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import '../../models/post_model.dart'; // 导入 PostModel
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -58,7 +59,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ),
               const SizedBox(height: 16),
 
-              // 图片上传提示（后续可以扩展为实际的上传功能）
+              // 图片上传部分
               _buildImageSection(),
               const SizedBox(height: 16),
 
@@ -130,19 +131,36 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           .doc(user.uid)
           .get();
 
-      await FirebaseFirestore.instance.collection('posts').add({
-        'authorId': user.uid,
-        'authorName': userDoc['username'],
-        'title': _titleController.text,
-        'content': _contentController.text,
-        'type': _selectedType,
-        'likes': 0,
-        'comments': 0,
-        'isResolved': false,
-        'createdAt': Timestamp.now(),
-        'hasImage': false, // 默认没有图片
-        'imageUrl': '',    // 空图片URL
-      });
+      String imageUrl = '';
+      bool hasImage = false;
+
+      // 如果有选择图片，先上传图片
+      if (_selectedImage != null) {
+        setState(() => _isUploadingImage = true);
+        imageUrl = await _uploadImage(_selectedImage!); // 这里正确使用了 await
+        hasImage = true;
+        setState(() => _isUploadingImage = false);
+      }
+
+      // 使用 PostModel 创建帖子对象
+      final newPost = PostModel(
+        authorId: user.uid,
+        authorName: userDoc['username'],
+        title: _titleController.text,
+        content: _contentController.text,
+        type: _selectedType,
+        likes: 0,
+        comments: 0,
+        isResolved: false,
+        createdAt: Timestamp.now(),
+        hasImage: hasImage,
+        imageUrl: imageUrl,
+      );
+
+      // 保存到 Firestore
+      await FirebaseFirestore.instance
+          .collection('posts')
+          .add(newPost.toMap());
 
       Navigator.pop(context);
     } catch (e) {
@@ -150,7 +168,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         SnackBar(content: Text('Post Failed: $e')),
       );
     } finally {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _isUploadingImage = false;
+      });
     }
   }
 
@@ -164,7 +185,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Widget _buildImageSection() {
     return Column(
       children: [
-        if(_selectedImage != null)
+        if (_selectedImage != null)
           Container(
             margin: const EdgeInsets.only(bottom: 16),
             child: Stack(
@@ -185,7 +206,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     radius: 16,
                     backgroundColor: Colors.black54,
                     child: IconButton(
-                      onPressed: ()=>setState(() => _selectedImage = null),
+                      onPressed: () => setState(() => _selectedImage = null),
                       icon: const Icon(Icons.close, size: 16, color: Colors.white),
                     ),
                   ),
@@ -196,17 +217,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: _pickImage, 
+            onPressed: _pickImage,
             icon: const Icon(Icons.camera_alt),
             label: const Text("Select Image"),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              side:BorderSide(color: Colors.green),
+              side: BorderSide(color: Colors.green),
             ),
           ),
         ),
         if (_isUploadingImage)
-           const Padding(
+          const Padding(
             padding: EdgeInsets.all(8.0),
             child: LinearProgressIndicator(),
           )
@@ -216,7 +237,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
-    try{
+    try {
       final XFile? image = await picker.pickImage(
         source: ImageSource.gallery,
         maxWidth: 1024,
@@ -224,15 +245,33 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         imageQuality: 75,
       );
 
-      if(image != null){
+      if (image != null) {
         setState(() {
           _selectedImage = File(image.path);
         });
       }
-    }catch(e){
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to select image: $e')),
       );
+    }
+  }
+
+  Future<String> _uploadImage(File imageFile) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser!;
+      // 修复：使用 user.uid 而不是 user.id
+      final String fileName = 'posts/${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      
+      final Reference storageRef = FirebaseStorage.instance.ref().child(fileName);
+      final UploadTask uploadTask = storageRef.putFile(imageFile);
+      final TaskSnapshot snapshot = await uploadTask;
+      final String downloadUrl = await snapshot.ref.getDownloadURL();
+      
+      return downloadUrl;
+    } catch (e) {
+      print('Upload Error: $e');
+      rethrow;
     }
   }
 }
