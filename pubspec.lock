@@ -89,6 +89,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.1"
+  cloud_functions:
+    dependency: "direct main"
+    description:
+      name: cloud_functions
+      sha256: "827f0d305e3c4f29ec3b8940894bb1ec6ef292d53a1fd6ac88bc68d0b09fd155"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.0.1"
+  cloud_functions_platform_interface:
+    dependency: transitive
+    description:
+      name: cloud_functions_platform_interface
+      sha256: "2ce7ce2b04c09c9b4406e7f9d73a06bd3b11e97c59f38d38475b00eddb59dd03"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.8.4"
+  cloud_functions_web:
+    dependency: transitive
+    description:
+      name: cloud_functions_web
+      sha256: ba7ec5504842afcfe4955df00813427dd761115764ebb9848eab1b734a98f4f8
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.1"
   collection:
     dependency: transitive
     description:
@@ -177,6 +201,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.9.3+4"
+  firebase_analytics:
+    dependency: "direct main"
+    description:
+      name: firebase_analytics
+      sha256: dde9d6a7b69b07551a77cfb913c81c64804f7602b07541328322c321e73f2a0e
+      url: "https://pub.dev"
+    source: hosted
+    version: "12.0.1"
+  firebase_analytics_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_analytics_platform_interface
+      sha256: "4008d82a58edcbedec34a7b39f457eed24181cb9c89782c104828c42e4c859b2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.0.1"
+  firebase_analytics_web:
+    dependency: transitive
+    description:
+      name: firebase_analytics_web
+      sha256: db2a2e8803f5471a5f89b4abacae95ae27e0644f77526879fb81a2c1abc12b5f
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.0+1"
   firebase_auth:
     dependency: "direct main"
     description:

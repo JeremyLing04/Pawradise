@@ -1,3 +1,4 @@
+//main.dart
 import 'package:flutter/material.dart';
 import 'constants.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -12,7 +13,6 @@ import 'screens/auth/login.dart';
 import 'screens/auth/register.dart';
 
 //profile
-import 'models/pet_model.dart'; 
 import 'screens/profile/pet_list_screen.dart';
 import 'screens/profile/add_edit_pet_screen.dart';
 
@@ -39,9 +39,12 @@ class MyApp extends StatelessWidget {
         '/': (context) => Login(),
         '/register': (context) => Register(),
         '/dashboard': (context) => DashboardScreen(),
-        '/pets': (context) => PetListScreen(), // 添加宠物列表路由
-        '/pets/add': (context) => AddEditPetScreen(), // 添加宠物
-        '/pets/edit': (context) => AddEditPetScreen(pet: Pet.mock()), // 编辑宠物（示例）
+        '/pets': (context) => PetListScreen(), 
+        '/pets/add': (context) => AddEditPetScreen(), 
+        // '/pets/edit': (context) {
+        //   final pet = ModalRoute.of(context)!.settings.arguments as Pet;
+        //   return AddEditPetScreen(pet: pet, userId: 'current_user_id');
+        // },
       },
       debugShowCheckedModeBanner: false,
     );
