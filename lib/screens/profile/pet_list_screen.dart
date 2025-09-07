@@ -7,17 +7,17 @@ import '../../services/pet_service.dart';
 import 'add_edit_pet_screen.dart';
 
 class PetListScreen extends StatefulWidget {
-  const PetListScreen({super.key}); // 移除 required userId 参数
+  const PetListScreen({super.key}); 
 
   @override
   State<PetListScreen> createState() => _PetListScreenState();
 }
 
 class _PetListScreenState extends State<PetListScreen> {
-  final String _userName = "ShengHan";
   final PetService _petService = PetService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   String? _userId;
+  String _userName = ""; 
 
   @override
   void initState() {
@@ -30,7 +30,16 @@ class _PetListScreenState extends State<PetListScreen> {
     if (user != null) {
       setState(() {
         _userId = user.uid;
+        // 使用方案二：displayName → 邮箱用户名 → "Pet Lover"
+        _userName = user.displayName ?? 
+                   (user.email != null ? user.email!.split('@')[0] : "Pet Lover");
       });
+      
+      // 添加调试信息
+      print('User ID: $_userId');
+      print('User Name: $_userName');
+      print('Display Name: ${user.displayName}');
+      print('Email: ${user.email}');
     }
   }
 
@@ -51,7 +60,7 @@ class _PetListScreenState extends State<PetListScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddEditPetScreen(pet: pet), // 使用获取到的 userId
+        builder: (context) => AddEditPetScreen(pet: pet),
       ),
     );
   }
@@ -100,8 +109,17 @@ class _PetListScreenState extends State<PetListScreen> {
                   Icon(Icons.error, size: 50, color: Colors.red),
                   SizedBox(height: 16),
                   Text(
-                    'Error loading pets',
-                    style: TextStyle(fontSize: 18, color: AppColors.accent),
+                    'Error loading pets: ${snapshot.error}',
+                    style: TextStyle(fontSize: 14, color: AppColors.accent),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      // 重新加载
+                      setState(() {});
+                    },
+                    child: Text('Retry'),
                   ),
                 ],
               ),
