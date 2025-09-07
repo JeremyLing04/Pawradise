@@ -1,5 +1,7 @@
+//screens/auth/register.dart
 import 'package:flutter/material.dart';
 import '../../constants.dart';
+import '../../services/auth_service.dart'; 
 
 class Register extends StatefulWidget {
   const Register({super.key});
@@ -13,6 +15,7 @@ class _RegisterState extends State<Register> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _usernameController = TextEditingController();
+  final AuthService _authService = AuthService();
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -31,6 +34,23 @@ class _RegisterState extends State<Register> {
 
     Navigator.pushReplacementNamed(context, '/dashboard');
   }
+
+  // void _Register() async {
+  //   // 先检查密码是否匹配
+  //   if (_passwordController.text != _confirmPasswordController.text) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Passwords do not match')),
+  //     );
+  //     return;
+  //   }
+
+  //   // 检查用户名是否为空
+  //   if (_usernameController.text.isEmpty) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Please enter a username')),
+  //     );
+  //     return;
+  // }
 
   @override
   Widget build(BuildContext context) {

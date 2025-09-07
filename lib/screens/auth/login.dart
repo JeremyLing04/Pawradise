@@ -1,5 +1,7 @@
+//screens/auth/login.dart
 import 'package:flutter/material.dart';
 import '../../constants.dart';
+import '../../services/auth_service.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -11,6 +13,7 @@ class Login extends StatefulWidget {
 class _LoginState extends State<Login> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
   bool _isLoading = false;
   bool _obscurePassword = true;
 
@@ -28,6 +31,27 @@ class _LoginState extends State<Login> {
 
     Navigator.pushReplacementNamed(context, '/dashboard');
   }
+
+  // void _Login() async {
+  //   setState(() => _isLoading = true);
+    
+  //   try {
+  //     final user = await _authService.signIn(
+  //       _emailController.text.trim(),
+  //       _passwordController.text.trim(),
+  //     );
+      
+  //     if (user != null) {
+  //       Navigator.pushReplacementNamed(context, '/dashboard');
+  //     }
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text(e.toString())),
+  //     );
+  //   } finally {
+  //     setState(() => _isLoading = false);
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
