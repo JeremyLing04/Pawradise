@@ -52,6 +52,23 @@ class AppTheme {
       );
 }
 
+class AppHeader {
+  static AppBar buildAppBar({String title = 'Pawradise', List<Widget>? actions}) {
+    return AppBar(
+      title: Text(title),
+      centerTitle: true,
+      foregroundColor: AppColors.accent,
+      backgroundColor: AppColors.primary,
+      actions: actions ?? [
+        IconButton(
+          icon: Icon(Icons.notifications, color: AppColors.accent),
+          onPressed: () {},
+        ),
+      ],
+    );
+  }
+}
+
 // 在 constants.dart 中添加
 class AppBottomBar {
   static const List<BottomNavigationBarItem> items = [
