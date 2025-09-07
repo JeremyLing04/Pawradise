@@ -10,7 +10,7 @@ class PostDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('帖子详情'),
+        title: const Text('Post Detail'),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
       ),
@@ -21,7 +21,7 @@ class PostDetailScreen extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(child: Text('错误: ${snapshot.error}'));
+            return Center(child: Text('Error: ${snapshot.error}'));
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -29,7 +29,7 @@ class PostDetailScreen extends StatelessWidget {
           }
 
           if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text('帖子不存在'));
+            return const Center(child: Text('Post does not exist.'));
           }
 
           final post = snapshot.data!;
@@ -41,6 +41,23 @@ class PostDetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 帖子标题和类型
+                Text(
+                  data['title'],
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // 帖子内容
+                Text(
+                  data['content'],
+                  style: const TextStyle(fontSize: 16, height: 1.5),
+                ),
+                const SizedBox(height: 16),
+
                 Row(
                   children: [
                     Container(
@@ -58,23 +75,7 @@ class PostDetailScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        data['title'],
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
                   ],
-                ),
-                const SizedBox(height: 16),
-
-                // 帖子内容
-                Text(
-                  data['content'],
-                  style: const TextStyle(fontSize: 16, height: 1.5),
                 ),
                 const SizedBox(height: 24),
 
@@ -139,9 +140,9 @@ class PostDetailScreen extends StatelessWidget {
 
   String _getTypeLabel(String type) {
     return {
-      'alert': '警报',
-      'discussion': '讨论',
-      'event': '活动',
+      'alert': 'Alert',
+      'discussion': 'Discussion',
+      'event': 'Event',
     }[type] ?? type;
   }
 

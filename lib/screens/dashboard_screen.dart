@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import '../constants.dart';
+import 'community/community_screen.dart';
+import '';
+import '';
+import 'profile/pet_list_screen.dart'; // 修改为pet_list_screen
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -11,123 +15,126 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
+  // 定义所有页面 - 修改第4个页面为PetListScreen
+  final List<Widget> _pages = [
+    _DashboardContent(),    // 首页内容 (索引0)
+    CommunityScreen(),      // 社区页面 (索引1)
+    Placeholder(),       // 日程页面 (索引2)
+    Placeholder(),            // 地图页面 (索引3)
+    PetListScreen(),        // 修改：宠物列表页面 (索引4)
+  ];
+
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
-    
-    // 添加页面跳转逻辑
-    switch (index) {
-      case 0: // Home
-        // 已经在首页，不需要跳转
-        break;
-      case 1: // Community
-        // TODO: 跳转到社区页面
-        break;
-      case 2: // Schedule
-        // TODO: 跳转到日程页面
-        break;
-      case 3: // Map
-        // TODO: 跳转到地图页面
-        break;
-      case 4: // Pets
-        Navigator.pushNamed(context, '/pets');
-        break;
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppHeader.buildAppBar(),
-      body: CustomScrollView(
-        slivers: [
-          // 顶部打招呼区域
-          SliverToBoxAdapter(
-            child: Container(
-              height: 130,
-              width: double.infinity,
-              color: AppColors.secondary,
-              padding: const EdgeInsets.only(top: 40, left: 24, right: 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Hello, ShengHan!",
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.accent,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    "Welcome back to Pawradise",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.accent.withOpacity(0.8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // 白色内容区域
-          SliverToBoxAdapter(
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.background,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(50),
-                  topRight: Radius.circular(50),
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.accent.withOpacity(0.08), // 用constants色系
-                    blurRadius: 12,
-                    offset: Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 20),
-                    _buildPetsSection(),
-                    SizedBox(height: 24),
-                    _buildRemindersBubble(),
-                    SizedBox(height: 24),
-                    _buildCommunityPreview(),
-                    SizedBox(height: 24),
-                    _buildQuickActions(),
-                    SizedBox(height: 24),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: ClipRRect(
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(15),  // 左上角圆角
-          topRight: Radius.circular(15), // 右上角圆角
-        ),
-        child: BottomNavigationBar(
-          items: AppBottomBar.items,
-          currentIndex: 0, // 当前选中Profile页
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: AppColors.textSecondary,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-        ),
-      ),
+      appBar: _selectedIndex == 0 ? AppHeader.buildAppBar() : null,
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
-  // 宠物卡片横向列表 - 使用primary颜色
-  Widget _buildPetsSection() {
+  // 底部导航栏
+  BottomNavigationBar _buildBottomNavigationBar() {
+    return BottomNavigationBar(
+      items: const [
+        BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+        BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Community'),
+        BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Schedule'),
+        BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
+        BottomNavigationBarItem(icon: Icon(Icons.pets), label: 'Pets'), // 修改图标和标签
+      ],
+      currentIndex: _selectedIndex,
+      selectedItemColor: AppColors.primary,
+      unselectedItemColor: AppColors.textSecondary,
+      onTap: _onItemTapped,
+      type: BottomNavigationBarType.fixed,
+    );
+  }
+}
+
+// 首页内容组件（保持原来的Dashboard布局）
+class _DashboardContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      slivers: [
+        // 顶部打招呼区域
+        SliverToBoxAdapter(
+          child: Container(
+            height: 130,
+            width: double.infinity,
+            color: AppColors.secondary,
+            padding: const EdgeInsets.only(top: 40, left: 24, right: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Hello, ShengHan!",
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.accent,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Welcome back to Pawradise",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.accent.withOpacity(0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        // 白色内容区域
+        SliverToBoxAdapter(
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(50),
+                topRight: Radius.circular(50),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.accent.withOpacity(0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
+                  _buildPetsSection(context), // 传递context用于导航
+                  const SizedBox(height: 24),
+                  _buildRemindersBubble(),
+                  const SizedBox(height: 24),
+                  _buildCommunityPreview(context),
+                  const SizedBox(height: 24),
+                  _buildQuickActions(context),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 宠物卡片横向列表 - 添加导航
+  Widget _buildPetsSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -136,17 +143,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary
         )),
-        SizedBox(height: 16),
+        const SizedBox(height: 16),
         SizedBox(
           height: 140,
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
               _buildPetCard("Buddy", "Golden Retriever"),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               _buildPetCard("Milo", "Corgi"),
-              SizedBox(width: 12),
-              _buildAddPetCard(),
+              const SizedBox(width: 12),
+              _buildAddPetCard(context), // 传递context
             ],
           ),
         ),
@@ -161,7 +168,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
         width: 130,
-        padding: EdgeInsets.all(12),
+        padding: const EdgeInsets.all(12),
         child: Column(
           children: [
             CircleAvatar(
@@ -169,9 +176,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               backgroundColor: AppColors.accent,
               child: Icon(Icons.pets, size: 32, color: AppColors.primary),
             ),
-            SizedBox(height: 8),
-
-            // 用 Expanded 让文字部分自动压缩
+            const SizedBox(height: 8),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -206,39 +211,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-
-  Widget _buildAddPetCard() {
-    return Card(
-      elevation: 4,
-      color: AppColors.primary.withOpacity(0.7),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Container(
-        width: 130,
-        padding: EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_circle, size: 40, color: AppColors.accent),
-            SizedBox(height: 12),
-            Text("Add Pet", style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: AppColors.accent
-            )),
-          ],
+  Widget _buildAddPetCard(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        // 导航到宠物列表页面
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => PetListScreen()),
+        );
+      },
+      child: Card(
+        elevation: 4,
+        color: AppColors.primary.withOpacity(0.7),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          width: 130,
+          padding: const EdgeInsets.all(16),
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.add_circle, size: 40, color: Colors.white),
+              SizedBox(height: 12),
+              Text("Add Pet", style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.white
+              )),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // 今日提醒 - 使用secondary颜色
+  // 今日提醒
   Widget _buildRemindersBubble() {
     return Card(
       elevation: 4,
       color: AppColors.secondary,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -254,7 +267,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Icon(Icons.notifications_active, color: AppColors.accent, size: 24),
               ],
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -272,7 +285,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildBubble(String task, String time, Color color) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(25),
@@ -285,7 +298,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             color: _getContrastColor(color),
             fontSize: 14
           )),
-          SizedBox(width: 8),
+          const SizedBox(width: 8),
           Text(time, style: TextStyle(
             fontSize: 12, 
             color: _getContrastColor(color),
@@ -296,14 +309,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // 社区动态 - 使用accent颜色
-  Widget _buildCommunityPreview() {
+  // 社区动态
+  Widget _buildCommunityPreview(BuildContext context) {
     return Card(
       elevation: 4,
       color: AppColors.accent,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Padding(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -317,7 +330,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       color: AppColors.primary
                     )),
                 TextButton(
-                  onPressed: () {}, 
+                  onPressed: () {
+                    _switchToCommunity(context);
+                  }, 
                   child: Text("View All", style: TextStyle(
                     color: AppColors.primary,
                     fontWeight: FontWeight.bold
@@ -325,7 +340,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             _buildCommunityPost("🐾 Missing Dog in Central Park", "15 likes"),
             _buildCommunityPost("🌳 New Dog Park Opening", "32 likes"),
             _buildCommunityPost("💉 Free Vaccination Event", "28 likes"),
@@ -337,7 +352,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildCommunityPost(String title, String likes) {
     return ListTile(
-      contentPadding: EdgeInsets.only(top: 8, bottom: 8),
+      contentPadding: const EdgeInsets.only(top: 8, bottom: 8),
       leading: Container(
         width: 40,
         height: 40,
@@ -355,18 +370,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.favorite, color: AppColors.primary, size: 16),
-          SizedBox(width: 4),
+          const SizedBox(width: 4),
           Text(likes, style: TextStyle(
             color: AppColors.primary.withOpacity(0.8),
             fontSize: 12
           )),
         ],
       ),
+      onTap: () {
+        _switchToCommunity(navigatorKey.currentContext!);
+      },
     );
   }
 
-  // 快速操作 - 使用不同颜色交替
-  Widget _buildQuickActions() {
+  // 快速操作
+  Widget _buildQuickActions(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -375,37 +393,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
           fontWeight: FontWeight.bold,
           color: AppColors.textPrimary
         )),
-        SizedBox(height: 16),
+        const SizedBox(height: 16),
         GridView.count(
           shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
+          physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: 2,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
           childAspectRatio: 1.8,
           children: [
-            _buildActionButton(Icons.chat, "Ask PawPal", AppColors.primary),
-            _buildActionButton(Icons.add_circle, "New Post", AppColors.secondary),
-            _buildActionButton(Icons.calendar_today, "Add Event", AppColors.accent),
-            _buildActionButton(Icons.place, "Find Places", AppColors.primary.withOpacity(0.7)),
+            _buildActionButton(Icons.chat, "Ask PawPal", AppColors.primary, () {
+              // TODO: 跳转到AI聊天
+            }),
+            _buildActionButton(Icons.add_circle, "New Post", AppColors.secondary, () {
+              _switchToCommunity(context);
+            }),
+            _buildActionButton(Icons.calendar_today, "Add Event", AppColors.accent, () {
+              _switchToSchedule(context);
+            }),
+            _buildActionButton(Icons.place, "Find Places", AppColors.primary.withOpacity(0.7), () {
+              _switchToMap(context);
+            }),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label, Color cardColor) {
+  Widget _buildActionButton(IconData icon, String label, Color cardColor, VoidCallback onPressed) {
     return Card(
       elevation: 4,
       color: cardColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: TextButton(
-        onPressed: () {},
+        onPressed: onPressed,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, size: 32, color: _getContrastColor(cardColor)),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(label, 
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -425,4 +451,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final brightness = backgroundColor.computeLuminance();
     return brightness > 0.5 ? AppColors.textPrimary : AppColors.background;
   }
+
+  // 导航辅助方法
+  void _switchToCommunity(BuildContext context) {
+    final dashboardState = context.findAncestorStateOfType<_DashboardScreenState>();
+    dashboardState?.setState(() {
+      dashboardState._selectedIndex = 1;
+    });
+  }
+
+  void _switchToSchedule(BuildContext context) {
+    final dashboardState = context.findAncestorStateOfType<_DashboardScreenState>();
+    dashboardState?.setState(() {
+      dashboardState._selectedIndex = 2;
+    });
+  }
+
+  void _switchToMap(BuildContext context) {
+    final dashboardState = context.findAncestorStateOfType<_DashboardScreenState>();
+    dashboardState?.setState(() {
+      dashboardState._selectedIndex = 3;
+    });
+  }
 }
+
+// 全局导航key
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
