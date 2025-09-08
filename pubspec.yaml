@@ -48,6 +48,10 @@ dependencies:
   google_fonts: ^4.0.0
   provider: ^6.0.5
   image_picker: ^1.2.0
+  google_generative_ai: ^0.4.7
+  http: ^1.5.0
+  flutter_dotenv: ^6.0.0
+  flutter_markdown: ^0.7.7+1
 
 dev_dependencies:
   flutter_test:
@@ -67,6 +71,7 @@ dev_dependencies:
 flutter:
   assets:
     - assets/images/login sign up background.jpg
+    - .env
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
