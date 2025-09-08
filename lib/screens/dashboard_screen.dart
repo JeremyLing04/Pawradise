@@ -5,6 +5,7 @@ import 'community/community_screen.dart';
 import '';
 import '';
 import 'profile/pet_list_screen.dart'; // 修改为pet_list_screen
+import 'schedule/schedule_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -20,7 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final List<Widget> _pages = [
     _DashboardContent(),    // 首页内容 (索引0)
     CommunityScreen(),      // 社区页面 (索引1)
-    Placeholder(),       // 日程页面 (索引2)
+    ScheduleScreen(),       // 日程页面 (索引2)
     MapScreen(),            // 地图页面 (索引3)
     PetListScreen(),        // 修改：宠物列表页面 (索引4)
   ];

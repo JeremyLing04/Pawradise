@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/event_provider.dart';
-import '../models/event_model.dart';
+import '../../providers/event_provider.dart';
+import '../../models/event_model.dart';
 import 'package:intl/intl.dart';
-import '../constants.dart';
-import '../screens/delete_event.dart';
+import '../../constants.dart';
+import 'delete_event.dart';
 
 class RemindersView extends StatelessWidget {
   const RemindersView({super.key});

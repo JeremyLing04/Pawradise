@@ -2,10 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import '../models/event_model.dart';
-import '../providers/event_provider.dart';
+import '../../models/event_model.dart';
+import '../../providers/event_provider.dart';
 import 'package:provider/provider.dart';
-import '../constants.dart';
+import '../../constants.dart';
 import 'edit_event.dart';
 import 'delete_event.dart';
 import 'add_event.dart';

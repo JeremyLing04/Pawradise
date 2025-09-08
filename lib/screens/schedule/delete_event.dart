@@ -1,8 +1,8 @@
 // screens/delete_event_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/event_model.dart';
-import '../providers/event_provider.dart';
+import '../../models/event_model.dart';
+import '../../providers/event_provider.dart';
 
 class DeleteEventDialog extends StatelessWidget {
   final Event event;

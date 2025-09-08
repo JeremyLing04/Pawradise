@@ -1,50 +1,46 @@
-// screens/edit_event_dialog.dart
+// screens/add_event_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../models/event_model.dart';
-import '../providers/event_provider.dart';
-import '../constants.dart';
+import '../../models/event_model.dart';
+import '../../providers/event_provider.dart';
+import '../../constants.dart';
 
-class EditEventDialog extends StatefulWidget {
-  final Event event;
+class AddEventDialog extends StatefulWidget {
+  final DateTime selectedDate;
 
-  const EditEventDialog({super.key, required this.event});
+  const AddEventDialog({super.key, required this.selectedDate});
 
   @override
-  State<EditEventDialog> createState() => _EditEventDialogState();
+  State<AddEventDialog> createState() => _AddEventDialogState();
 }
 
-class _EditEventDialogState extends State<EditEventDialog> {
-  final _formKey = GlobalKey<FormState>();
-  late TextEditingController _titleController;
-  late TextEditingController _descriptionController;
-  late DateTime _selectedTime;
-  late EventType _selectedType;
-  late int _notificationMinutes;
+class _AddEventDialogState extends State<AddEventDialog> {
+  final _formKey = GlobalKey<FormState>(); //validate input
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  DateTime _selectedTime = DateTime.now();
+  EventType _selectedType = EventType.other;
+  int _notificationMinutes = 30;
 
+//initialize
   @override
   void initState() {
     super.initState();
-    _titleController = TextEditingController(text: widget.event.title);
-    _descriptionController = TextEditingController(
-      text: widget.event.description ?? '',
-    );
-    _selectedTime = widget.event.scheduledTime;
-    _selectedType = widget.event.type;
-    _notificationMinutes = widget.event.notificationMinutes;
+    _selectedTime = widget.selectedDate;
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Edit Event'),
+      title: const Text('Add New Event'),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              //title
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Title'),
@@ -55,11 +51,15 @@ class _EditEventDialogState extends State<EditEventDialog> {
                   return null;
                 },
               ),
+
+              //description
               TextFormField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'Description'),
                 maxLines: 3,
               ),
+
+              //event type
               DropdownButtonFormField<EventType>(
                 value: _selectedType,
                 items: EventType.values.map((type) {
@@ -75,9 +75,11 @@ class _EditEventDialogState extends State<EditEventDialog> {
                 },
                 decoration: const InputDecoration(labelText: 'Event Type'),
               ),
+
+              //date & time choose
               ListTile(
                 title: Text(
-                  'Date: ${DateFormat('MMM d, yyyy').format(_selectedTime)}',
+                  'Date: ${DateFormat('MMM d, yyyy').format(widget.selectedDate)}',
                 ),
                 subtitle: Text(
                   'Time: ${DateFormat('hh:mm a').format(_selectedTime)}',
@@ -86,20 +88,30 @@ class _EditEventDialogState extends State<EditEventDialog> {
                 onTap: () => _selectTime(context),
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<int>(
-                value: _notificationMinutes,
-                items: EventProvider.notificationTimeOptions.map((minutes) {
-                  return DropdownMenuItem(
-                    value: minutes,
-                    child: Text(EventProvider.getNotificationTimeText(minutes)),
+
+              //notification min
+              Consumer<EventProvider>(
+                builder: (context, eventProvider, child) {
+                  return DropdownButtonFormField<int>(
+                    value: _notificationMinutes,
+                    items: EventProvider.notificationTimeOptions.map((minutes) {
+                      return DropdownMenuItem(
+                        value: minutes,
+                        child: Text(
+                          EventProvider.getNotificationTimeText(minutes),
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _notificationMinutes = value!;
+                      });
+                    },
+                    decoration: const InputDecoration(
+                      labelText: 'Reminder Time',
+                    ),
                   );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _notificationMinutes = value!;
-                  });
                 },
-                decoration: const InputDecoration(labelText: 'Reminder Time'),
               ),
             ],
           ),
@@ -111,13 +123,14 @@ class _EditEventDialogState extends State<EditEventDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: () => _updateEvent(context),
-          child: const Text('Update'),
+          onPressed: () => _saveEvent(context),
+          child: const Text('Save'),
         ),
       ],
     );
   }
 
+  //event time
   Future<void> _selectTime(BuildContext context) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
@@ -127,9 +140,9 @@ class _EditEventDialogState extends State<EditEventDialog> {
     if (picked != null) {
       setState(() {
         _selectedTime = DateTime(
-          _selectedTime.year,
-          _selectedTime.month,
-          _selectedTime.day,
+          widget.selectedDate.year,
+          widget.selectedDate.month,
+          widget.selectedDate.day,
           picked.hour,
           picked.minute,
         );
@@ -137,27 +150,27 @@ class _EditEventDialogState extends State<EditEventDialog> {
     }
   }
 
-  void _updateEvent(BuildContext context) {
+  //save event
+  void _saveEvent(BuildContext context) {
     if (_formKey.currentState!.validate()) {
-      final updatedEvent = Event(
-        id: widget.event.id,
-        userId: widget.event.userId,
-        petId: widget.event.petId,
+      final event = Event(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        userId: 'current_user_id',
+        petId: 'default_pet_id',
         title: _titleController.text,
         description: _descriptionController.text.isEmpty
             ? null
             : _descriptionController.text,
         type: _selectedType,
         scheduledTime: _selectedTime,
-        isCompleted: widget.event.isCompleted,
-        createdAt: widget.event.createdAt,
+        isCompleted: false,
+        createdAt: DateTime.now(),
         notificationMinutes: _notificationMinutes,
       );
 
-      Provider.of<EventProvider>(
-        context,
-        listen: false,
-      ).updateEvent(updatedEvent);
+      //add event
+      Provider.of<EventProvider>(context, listen: false).addEvent(event);
+      //close
       Navigator.pop(context);
     }
   }

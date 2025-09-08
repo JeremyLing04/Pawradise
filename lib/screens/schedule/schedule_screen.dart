@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/event_provider.dart';
-import '../services/notification_service.dart';
-import '../screens/calendar_screen.dart';
-import '../screens/reminders_screen.dart';
+import '../../providers/event_provider.dart';
+import '../../services/notification_service.dart';
+import 'calendar_screen.dart';
+import 'reminders_screen.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
 class ScheduleScreen extends StatefulWidget {
