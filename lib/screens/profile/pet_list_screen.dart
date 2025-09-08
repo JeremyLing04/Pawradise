@@ -5,6 +5,7 @@ import '../../constants.dart';
 import '../../models/pet_model.dart';
 import '../../services/pet_service.dart';
 import 'add_edit_pet_screen.dart';
+import '../chat/ai_chat_screen..dart';
 
 class PetListScreen extends StatefulWidget {
   const PetListScreen({super.key}); 
@@ -86,6 +87,16 @@ class _PetListScreenState extends State<PetListScreen> {
         foregroundColor: AppColors.accent,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: Icon(Icons.chat, color: AppColors.accent),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AIChatScreen()),
+              );
+            },
+            tooltip: 'Ask PawPal AI',
+          ),
           IconButton(
             icon: Icon(Icons.add, color: AppColors.accent),
             onPressed: _navigateToAddPet,
