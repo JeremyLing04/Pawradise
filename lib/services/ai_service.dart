@@ -17,6 +17,10 @@ class AIService {
     final user = _auth.currentUser;
     if (user == null || _hasInitializedWelcomeMessage) return;
 
+    // 获取用户名（使用displayName或email用户名）
+    final userName = user.displayName ?? 
+                  (user.email != null ? user.email!.split('@')[0] : "Pet Lover");
+
     // 检查是否已经有聊天记录
     final existingMessages = await _firestore
         .collection('chat_messages')
@@ -34,21 +38,21 @@ class AIService {
         message: 'Hello!',
         isUser: false,
         timestamp: DateTime.now(),
-        response: '''🐾 Welcome to PawPal AI Assistant! 
+        response: '''🐾 Welcome to PawPal AI Assistant, $userName! 
 
-I'm your dedicated dog expert here to help with all things canine! 🐕
+  I'm your dedicated dog expert here to help with all things canine! 🐕
 
-I can assist you with:
-• Training techniques and obedience 🎯
-• Health concerns and preventive care 🏥
-• Diet and nutrition guidance 🍖
-• Behavior issues and solutions 🐶
-• Grooming and maintenance tips ✂️
-• Breed-specific advice 📋
-• Puppy care and socialization 🐾
-• Senior dog wellness 👴
+  I can assist you with:
+  • Training techniques and obedience 🎯
+  • Health concerns and preventive care 🏥
+  • Diet and nutrition guidance 🍖
+  • Behavior issues and solutions 🐶
+  • Grooming and maintenance tips ✂️
+  • Breed-specific advice 📋
+  • Puppy care and socialization 🐾
+  • Senior dog wellness 👴
 
-What would you like to know about your furry friend today? Feel free to ask me anything! 😊''',
+  What would you like to know about your furry friend today? Feel free to ask me anything! 😊''',
       );
 
       await _firestore.collection('chat_messages').doc(welcomeMessageId).set(welcomeMessage.toMap());
@@ -69,6 +73,7 @@ What would you like to know about your furry friend today? Feel free to ask me a
         'Content-Type': 'application/json',
       };
 
+      // 修改提示词部分 - 让回复更简洁
       final Map<String, dynamic> requestBody = {
         "contents": [
           {
@@ -76,25 +81,29 @@ What would you like to know about your furry friend today? Feel free to ask me a
               {
                 "text": '''You are PawPal, a professional dog expert AI assistant. You MUST respond in ENGLISH only.
 
-User question: "$userMessage"
+      User question: "$userMessage"
 
-Provide comprehensive dog advice including:
-- Root cause analysis
-- Step-by-step solutions
-- Practical implementation tips
-- Warning signs for vet consultation
-- Breed-specific considerations if relevant
+      Provide concise and practical dog advice. Keep responses under 150 words.
 
-Keep responses professional yet friendly. Use appropriate emojis.
+      Focus on:
+      - Key insights and main solutions
+      - Most important actionable tips
+      - Critical warning signs if any
 
-CRITICAL: RESPOND IN ENGLISH LANGUAGE ONLY. DO NOT TRANSLATE OR USE OTHER LANGUAGES.'''
+      Be professional yet friendly. Use 1-2 relevant emojis.
+
+      CRITICAL: 
+      - RESPOND IN ENGLISH ONLY
+      - KEEP RESPONSES CONCISE (under 150 words)
+      - NO UNNECESSARY DETAILS
+      - GET STRAIGHT TO THE POINT'''
               }
             ]
           }
         ],
         "generationConfig": {
           "temperature": 0.7,
-          "maxOutputTokens": 1024,
+          "maxOutputTokens": 300,  // 减少最大token数量
           "topP": 0.8,
           "topK": 40
         },

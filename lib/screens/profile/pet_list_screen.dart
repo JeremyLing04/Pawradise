@@ -5,7 +5,8 @@ import '../../constants.dart';
 import '../../models/pet_model.dart';
 import '../../services/pet_service.dart';
 import 'add_edit_pet_screen.dart';
-import '../chat/ai_chat_screen..dart';
+import '../chat/ai_chat_screen.dart';
+import 'dart:async';
 
 class PetListScreen extends StatefulWidget {
   const PetListScreen({super.key}); 
@@ -18,31 +19,74 @@ class _PetListScreenState extends State<PetListScreen> {
   final PetService _petService = PetService();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   String? _userId;
-  String _userName = ""; 
+  String _userName = "";
+  StreamSubscription<User?>? _authSubscription;
 
   @override
   void initState() {
     super.initState();
-    _getCurrentUser();
+    // 监听认证状态变化
+    _authSubscription = _auth.authStateChanges().listen((user) {
+      if (user != null) {
+        setState(() {
+          _userId = user.uid;
+          _userName = user.displayName ?? 
+                     (user.email != null ? user.email!.split('@')[0] : "Pet Lover");
+        });
+        print('User loaded: $_userName');
+      }
+    });
   }
 
-  void _getCurrentUser() {
+  void _getCurrentUserImmediately() {
     final user = _auth.currentUser;
     if (user != null) {
-      setState(() {
-        _userId = user.uid;
-        // 使用方案二：displayName → 邮箱用户名 → "Pet Lover"
-        _userName = user.displayName ?? 
-                   (user.email != null ? user.email!.split('@')[0] : "Pet Lover");
-      });
-      
-      // 添加调试信息
-      print('User ID: $_userId');
-      print('User Name: $_userName');
-      print('Display Name: ${user.displayName}');
-      print('Email: ${user.email}');
+      _setUserData(user);
     }
   }
+
+  void _setUserData(User user) {
+    setState(() {
+      _userId = user.uid;
+      _userName = user.displayName ?? 
+                 (user.email != null ? user.email!.split('@')[0] : "Pet Lover");
+    });
+    
+    print('User ID: $_userId');
+    print('User Name: $_userName');
+    print('Display Name: ${user.displayName}');
+    print('Email: ${user.email}');
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _getCurrentUser();
+  // }
+
+  // void _getCurrentUser() {
+  //   final user = _auth.currentUser;
+  //   if (user != null) {
+  //     setState(() {
+  //       _userId = user.uid;
+  //       // 使用方案二：displayName → 邮箱用户名 → "Pet Lover"
+  //       _userName = user.displayName ?? 
+  //                  (user.email != null ? user.email!.split('@')[0] : "Pet Lover");
+  //     });
+      
+  //     // 添加调试信息
+  //     print('User ID: $_userId');
+  //     print('User Name: $_userName');
+  //     print('Display Name: ${user.displayName}');
+  //     print('Email: ${user.email}');
+  //   }
+  // }
 
   void _navigateToAddPet() {
     if (_userId == null) return;

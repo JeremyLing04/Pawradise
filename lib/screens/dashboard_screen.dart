@@ -4,6 +4,7 @@ import 'community/community_screen.dart';
 import '';
 import '';
 import 'profile/pet_list_screen.dart'; // 修改为pet_list_screen
+import 'chat/ai_chat_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -403,7 +404,10 @@ class _DashboardContent extends StatelessWidget {
           childAspectRatio: 1.8,
           children: [
             _buildActionButton(Icons.chat, "Ask PawPal", AppColors.primary, () {
-              // TODO: 跳转到AI聊天
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AIChatScreen()),
+              );
             }),
             _buildActionButton(Icons.add_circle, "New Post", AppColors.secondary, () {
               _switchToCommunity(context);

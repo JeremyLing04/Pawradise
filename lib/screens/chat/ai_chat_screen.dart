@@ -1,4 +1,4 @@
-// screens/ai_chat/ai_chat_screen.dart
+// screens/chat/ai_chat_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../constants.dart';
@@ -53,7 +53,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('发送失败: $e'),
+          content: Text('Sending failed: $e'),
           duration: Duration(seconds: 3),
         ),
       );

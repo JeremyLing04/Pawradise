@@ -15,7 +15,7 @@ import 'screens/profile/pet_list_screen.dart';
 import 'screens/profile/add_edit_pet_screen.dart';
 
 // chat
-import 'screens/chat/ai_chat_screen..dart';
+import 'screens/chat/ai_chat_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
