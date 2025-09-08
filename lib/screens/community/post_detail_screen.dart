@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pawradise/screens/community/widgets/like_button_widget.dart';
-import 'package:pawradise/screens/community/widgets/comment_like_button.dart'; // 新增
+import 'package:pawradise/screens/community/widgets/comment_like_button.dart';
 import '../../models/post_model.dart';
 import '../../models/comment_model.dart';
 
@@ -33,39 +33,96 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     });
   }
 
+  // 构建自定义 App Bar
+  PreferredSizeWidget _buildAppBar(PostModel post) {
+    return AppBar(
+      backgroundColor: Colors.green,
+      foregroundColor: Colors.white,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+      title: Row(
+        children: [
+          // 用户头像
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: Colors.white,
+            child: Text(
+              post.authorName[0],
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.green,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // 用户名
+          Expanded(
+            child: Text(
+              post.authorName,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        // 帖子类型徽章
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          margin: const EdgeInsets.only(right: 16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            _getTypeLabel(post.type),
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Post Detail'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-      ),
-      body: Column(
-        children: [
-          // 帖子内容（可滚动）
-          Expanded(
-            child: StreamBuilder<DocumentSnapshot>(
-              stream: _firestore
-                  .collection('posts')
-                  .doc(widget.postId)
-                  .snapshots(),
-              builder: (context, postSnapshot) {
-                if (postSnapshot.hasError) {
-                  return Center(child: Text('Error: ${postSnapshot.error}'));
-                }
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: _firestore
+            .collection('posts')
+            .doc(widget.postId)
+            .snapshots(),
+        builder: (context, postSnapshot) {
+          if (postSnapshot.hasError) {
+            return Center(child: Text('Error: ${postSnapshot.error}'));
+          }
 
-                if (postSnapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+          if (postSnapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-                if (!postSnapshot.hasData || !postSnapshot.data!.exists) {
-                  return const Center(child: Text('Post does not exist.'));
-                }
+          if (!postSnapshot.hasData || !postSnapshot.data!.exists) {
+            return const Center(child: Text('Post does not exist.'));
+          }
 
-                final post = PostModel.fromFireStore(postSnapshot.data!);
+          final post = PostModel.fromFireStore(postSnapshot.data!);
 
-                return SingleChildScrollView(
+          return Column(
+            children: [
+              // 自定义 App Bar
+              _buildAppBar(post),
+
+              // 帖子内容（可滚动）
+              Expanded(
+                child: SingleChildScrollView(
                   controller: _scrollController,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -78,23 +135,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // 帖子内容部分保持不变...
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: _getTypeColor(post.type).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Text(
-                                _getTypeLabel(post.type),
-                                style: TextStyle(
-                                  color: _getTypeColor(post.type),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 16),
+                            // 帖子标题
                             Text(
                               post.title,
                               style: const TextStyle(
@@ -103,6 +144,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                               ),
                             ),
                             const SizedBox(height: 16),
+
+                            // 帖子内容
                             Text(
                               post.content,
                               style: const TextStyle(
@@ -111,43 +154,33 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                                 color: Colors.black87,
                               ),
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 16),
+
+                            // 发布时间信息
                             Row(
                               children: [
-                                CircleAvatar(
-                                  radius: 20,
-                                  backgroundColor: Colors.green,
-                                  child: Text(
-                                    post.authorName[0],
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
+                                const Icon(Icons.access_time, size: 16, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _formatDetailTimestamp(post.createdAt),
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                const Spacer(),
+                                if (post.type == 'alert')
+                                  Chip(
+                                    label: Text(
+                                      post.isResolved ? 'Resolved' : 'Unresolved',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                      ),
                                     ),
+                                    backgroundColor: post.isResolved ? Colors.green : Colors.red,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        post.authorName,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      Text(
-                                        _formatDetailTimestamp(post.createdAt),
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          color: Colors.grey,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
                               ],
                             ),
                             const SizedBox(height: 20),
@@ -197,20 +230,20 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                       ),
                     ],
                   ),
-                );
-              },
-            ),
-          ),
+                ),
+              ),
 
-          // 固定在底部的互动栏
-          _buildBottomActionBar(),
-        ],
+              // 固定在底部的互动栏
+              _buildBottomActionBar(post),
+            ],
+          );
+        },
       ),
     );
   }
 
   // 固定在底部的互动栏
-  Widget _buildBottomActionBar() {
+  Widget _buildBottomActionBar(PostModel post) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
@@ -224,80 +257,74 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           ),
         ],
       ),
-      child: StreamBuilder<DocumentSnapshot>(
-        stream: _firestore.collection('posts').doc(widget.postId).snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) return const SizedBox();
+      child: Row(
+        children: [
+          // 点赞按钮
+          LikeButtonWidget(
+            postId: widget.postId,
+            initialLikes: post.likes,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '${post.likes}',
+            style: const TextStyle(fontSize: 14),
+          ),
+          const SizedBox(width: 16),
           
-          final post = PostModel.fromFireStore(snapshot.data!);
+          // 评论按钮
+          IconButton(
+            onPressed: () {
+              _scrollController.animateTo(
+                _scrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            },
+            icon: const Icon(Icons.comment_outlined),
+            color: Colors.green,
+            iconSize: 24,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            '${post.comments}',
+            style: const TextStyle(fontSize: 14),
+          ),
+          const SizedBox(width: 16),
           
-          return Row(
-            children: [
-              // 点赞按钮
-              LikeButtonWidget(
-                postId: widget.postId,
-                initialLikes: post.likes,
-              ),
-              Text(
-                '${post.likes}',
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(width: 8),
-              
-              // 评论按钮
-              IconButton(
-                onPressed: () {
-                  _scrollController.animateTo(
-                    _scrollController.position.maxScrollExtent,
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeOut,
-                  );
-                },
-                icon: const Icon(Icons.comment_outlined),
-                color: Colors.green,
-              ),
-              Text(
-                '${post.comments}',
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(width: 16),
-              
-              // 评论输入框
-              Expanded(
-                child: TextField(
-                  controller: _commentController,
-                  decoration: InputDecoration(
-                    hintText: 'Write a comment...',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                  ),
-                  onTap: () {
-                    _scrollController.animateTo(
-                      _scrollController.position.maxScrollExtent,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeOut,
-                    );
-                  },
+          // 评论输入框
+          Expanded(
+            child: TextField(
+              controller: _commentController,
+              decoration: InputDecoration(
+                hintText: 'Write a comment...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
                 ),
               ),
-              const SizedBox(width: 8),
-              
-              // 发送按钮
-              _isLoadingComment
-                  ? const CircularProgressIndicator()
-                  : IconButton(
-                      onPressed: _addComment,
-                      icon: const Icon(Icons.send),
-                      color: Colors.green,
-                    ),
-            ],
-          );
-        },
+              onTap: () {
+                _scrollController.animateTo(
+                  _scrollController.position.maxScrollExtent,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
+          
+          // 发送按钮
+          _isLoadingComment
+              ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator())
+              : IconButton(
+                  onPressed: _addComment,
+                  icon: const Icon(Icons.send),
+                  color: Colors.green,
+                ),
+        ],
       ),
     );
   }
@@ -340,7 +367,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
-  // 构建单个评论项 - 使用新的点赞组件
+  // 构建单个评论项
   Widget _buildCommentItem(CommentModel comment) {
     final isCurrentUser = _auth.currentUser?.uid == comment.authorId;
 
@@ -394,7 +421,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
               const Spacer(),
-              // 使用新的评论点赞组件
+              // 使用评论点赞组件
               CommentLikeButton(
                 commentId: comment.id!,
                 initialLikes: comment.likes,
@@ -454,30 +481,18 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
       _commentController.clear();
       
-      // 自动展开评论列表
-      if (!_showComments) {
-        setState(() => _showComments = true);
-      }
+      // 自动滚动到底部
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to add comment: $e')),
       );
     } finally {
       setState(() => _isLoadingComment = false);
-    }
-  }
-
-  // 点赞评论
-  Future<void> _likeComment(CommentModel comment) async {
-    final user = _auth.currentUser;
-    if (user == null) return;
-
-    try {
-      await _firestore.collection('comments').doc(comment.id).update({
-        'likes': FieldValue.increment(1),
-      });
-    } catch (e) {
-      print('Like comment error: $e');
     }
   }
 
@@ -563,7 +578,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   String _formatDetailTimestamp(Timestamp timestamp) {
     final date = timestamp.toDate();
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inMinutes < 1) return 'Just now';
+    if (difference.inHours < 1) return '${difference.inMinutes}m ago';
+    if (difference.inDays < 1) return '${difference.inHours}h ago';
+    if (difference.inDays < 7) return '${difference.inDays}d ago';
+    
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   String _formatCommentTimestamp(Timestamp timestamp) {
@@ -582,6 +605,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   void dispose() {
     _commentController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 }
