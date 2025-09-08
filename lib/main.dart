@@ -1,6 +1,11 @@
 // main.dart
 import 'package:flutter/material.dart';
-
+import 'package:provider/provider.dart';
+import 'screens/schedule/schedule_screen.dart';
+import 'providers/event_provider.dart';
+import 'constants.dart';
+// import 'package:firebase_core/firebase_core.dart';
+// import 'firebase_options.dart';
 
 import 'constants.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -31,7 +36,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
+
   runApp(MyApp());
 }
 

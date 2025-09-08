@@ -12,6 +12,7 @@ android {
     ndkVersion = "27.0.12077973"
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -52,4 +53,10 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:17.0.1")  // Required for Google Maps
     implementation("com.google.maps.android:maps-utils-ktx:2.0.0")         // Optional: For utilities like polylines, circles, etc.
     implementation("com.google.android.gms:play-services-location:17.0.0")  // For location services
+    // For AGP 7.4+
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
+    // For AGP 7.3
+    // coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.2.3")
+    // For AGP 4.0 to 7.2
+    // coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:1.1.9")
 }
