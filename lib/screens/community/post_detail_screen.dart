@@ -1,13 +1,37 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pawradise/screens/community/widgets/like_button_widget.dart';
+import 'package:pawradise/screens/community/widgets/comment_like_button.dart'; // 新增
 import '../../models/post_model.dart';
+import '../../models/comment_model.dart';
 
-class PostDetailScreen extends StatelessWidget {
+class PostDetailScreen extends StatefulWidget {
   final String postId;
 
   const PostDetailScreen({super.key, required this.postId});
+
+  @override
+  State<PostDetailScreen> createState() => _PostDetailScreenState();
+}
+
+class _PostDetailScreenState extends State<PostDetailScreen> {
+  final TextEditingController _commentController = TextEditingController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  bool _isLoadingComment = false;
+  bool _showComments = false;
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // 页面加载时自动展开评论
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() => _showComments = true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,159 +41,481 @@ class PostDetailScreen extends StatelessWidget {
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
       ),
-      body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('posts')
-            .doc(postId)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
+      body: Column(
+        children: [
+          // 帖子内容（可滚动）
+          Expanded(
+            child: StreamBuilder<DocumentSnapshot>(
+              stream: _firestore
+                  .collection('posts')
+                  .doc(widget.postId)
+                  .snapshots(),
+              builder: (context, postSnapshot) {
+                if (postSnapshot.hasError) {
+                  return Center(child: Text('Error: ${postSnapshot.error}'));
+                }
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+                if (postSnapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text('Post does not exist.'));
-          }
+                if (!postSnapshot.hasData || !postSnapshot.data!.exists) {
+                  return const Center(child: Text('Post does not exist.'));
+                }
 
-          // 使用 PostModel.fromFirestore 创建模型实例
-          final post = PostModel.fromFireStore(snapshot.data!);
+                final post = PostModel.fromFireStore(postSnapshot.data!);
 
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 图片部分（如果有图片）
-                if (post.hasImage && post.imageUrl.isNotEmpty)
-                  _buildDetailImage(post.imageUrl),
-                
-                // 内容部分
-                Padding(
-                  padding: const EdgeInsets.all(20),
+                return SingleChildScrollView(
+                  controller: _scrollController,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // 帖子类型徽章
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _getTypeColor(post.type).withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          _getTypeLabel(post.type),
-                          style: TextStyle(
-                            color: _getTypeColor(post.type),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 帖子标题
-                      Text(
-                        post.title,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // 帖子内容
-                      Text(
-                        post.content,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          height: 1.6,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // 作者和时间信息
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundColor: Colors.green,
-                            child: Text(
-                              post.authorName[0],
+                      if (post.hasImage && post.imageUrl.isNotEmpty)
+                        _buildDetailImage(post.imageUrl),
+                      
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 帖子内容部分保持不变...
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _getTypeColor(post.type).withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Text(
+                                _getTypeLabel(post.type),
+                                style: TextStyle(
+                                  color: _getTypeColor(post.type),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              post.title,
                               style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
+                                fontSize: 24,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            const SizedBox(height: 16),
+                            Text(
+                              post.content,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                height: 1.6,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Row(
                               children: [
-                                Text(
-                                  post.authorName,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: Colors.green,
+                                  child: Text(
+                                    post.authorName[0],
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
-                                Text(
-                                  _formatDetailTimestamp(post.createdAt),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        post.authorName,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      Text(
+                                        _formatDetailTimestamp(post.createdAt),
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
+                            const SizedBox(height: 20),
 
-                      // 互动按钮
-                      Row(
-                        children: [
-                          LikeButtonWidget(
-                            postId: post.id!, // 使用从 Firestore 获取的帖子ID
-                            initialLikes: post.likes,
-                          ),
-                          const SizedBox(width: 20),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.comment_outlined),
-                            color: Colors.green,
-                            iconSize: 28,
-                          ),
-                          Text(
-                            '${post.comments}',
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                          const Spacer(),
-                          if (post.type == 'alert')
-                            Chip(
-                              label: Text(
-                                post.isResolved ? 'Resolved' : 'Unresolved',
-                                style: const TextStyle(color: Colors.white),
-                              ),
-                              backgroundColor: post.isResolved ? Colors.green : Colors.red,
+                            // 分割线 - 分隔帖子和评论
+                            Divider(
+                              thickness: 2,
+                              color: Colors.grey[300],
+                              height: 40,
                             ),
-                        ],
+
+                            // 评论列表标题
+                            Row(
+                              children: [
+                                const Text(
+                                  'Comments',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                StreamBuilder<QuerySnapshot>(
+                                  stream: _firestore
+                                      .collection('comments')
+                                      .where('postId', isEqualTo: widget.postId)
+                                      .snapshots(),
+                                  builder: (context, snapshot) {
+                                    final count = snapshot.data?.docs.length ?? 0;
+                                    return Text(
+                                      '($count)',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.grey,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+
+                            // 评论列表
+                            _buildCommentsList(),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                );
+              },
             ),
+          ),
+
+          // 固定在底部的互动栏
+          _buildBottomActionBar(),
+        ],
+      ),
+    );
+  }
+
+  // 固定在底部的互动栏
+  Widget _buildBottomActionBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey.shade300)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: StreamBuilder<DocumentSnapshot>(
+        stream: _firestore.collection('posts').doc(widget.postId).snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) return const SizedBox();
+          
+          final post = PostModel.fromFireStore(snapshot.data!);
+          
+          return Row(
+            children: [
+              // 点赞按钮
+              LikeButtonWidget(
+                postId: widget.postId,
+                initialLikes: post.likes,
+              ),
+              Text(
+                '${post.likes}',
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(width: 8),
+              
+              // 评论按钮
+              IconButton(
+                onPressed: () {
+                  _scrollController.animateTo(
+                    _scrollController.position.maxScrollExtent,
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeOut,
+                  );
+                },
+                icon: const Icon(Icons.comment_outlined),
+                color: Colors.green,
+              ),
+              Text(
+                '${post.comments}',
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(width: 16),
+              
+              // 评论输入框
+              Expanded(
+                child: TextField(
+                  controller: _commentController,
+                  decoration: InputDecoration(
+                    hintText: 'Write a comment...',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                  ),
+                  onTap: () {
+                    _scrollController.animateTo(
+                      _scrollController.position.maxScrollExtent,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOut,
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              
+              // 发送按钮
+              _isLoadingComment
+                  ? const CircularProgressIndicator()
+                  : IconButton(
+                      onPressed: _addComment,
+                      icon: const Icon(Icons.send),
+                      color: Colors.green,
+                    ),
+            ],
           );
         },
       ),
     );
+  }
+
+  // 构建评论列表
+  Widget _buildCommentsList() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore
+          .collection('comments')
+          .where('postId', isEqualTo: widget.postId)
+          .orderBy('createdAt', descending: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.data!.docs.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Text(
+              'No comments yet. Be the first to comment!',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+          );
+        }
+
+        return Column(
+          children: snapshot.data!.docs.map((doc) {
+            final comment = CommentModel.fromFireStore(doc);
+            return _buildCommentItem(comment);
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  // 构建单个评论项 - 使用新的点赞组件
+  Widget _buildCommentItem(CommentModel comment) {
+    final isCurrentUser = _auth.currentUser?.uid == comment.authorId;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.green,
+                child: Text(
+                  comment.authorName[0],
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  comment.authorName,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            comment.content,
+            style: const TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Text(
+                _formatCommentTimestamp(comment.createdAt),
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const Spacer(),
+              // 使用新的评论点赞组件
+              CommentLikeButton(
+                commentId: comment.id!,
+                initialLikes: comment.likes,
+              ),
+              const SizedBox(width: 8),
+              if (isCurrentUser)
+                IconButton(
+                  onPressed: () => _deleteComment(comment),
+                  icon: const Icon(Icons.delete, size: 18),
+                  color: Colors.red,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 添加评论
+  Future<void> _addComment() async {
+    final content = _commentController.text.trim();
+    if (content.isEmpty) return;
+
+    final user = _auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to comment')),
+      );
+      return;
+    }
+
+    setState(() => _isLoadingComment = true);
+
+    try {
+      // 获取用户信息
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      final username = userDoc['username'];
+
+      // 创建评论
+      final comment = CommentModel(
+        postId: widget.postId,
+        authorId: user.uid,
+        authorName: username,
+        content: content,
+        createdAt: Timestamp.now(),
+      );
+
+      // 保存评论
+      await _firestore.collection('comments').add(comment.toMap());
+
+      // 更新帖子的评论计数
+      await _firestore.collection('posts').doc(widget.postId).update({
+        'comments': FieldValue.increment(1),
+      });
+
+      _commentController.clear();
+      
+      // 自动展开评论列表
+      if (!_showComments) {
+        setState(() => _showComments = true);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add comment: $e')),
+      );
+    } finally {
+      setState(() => _isLoadingComment = false);
+    }
+  }
+
+  // 点赞评论
+  Future<void> _likeComment(CommentModel comment) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await _firestore.collection('comments').doc(comment.id).update({
+        'likes': FieldValue.increment(1),
+      });
+    } catch (e) {
+      print('Like comment error: $e');
+    }
+  }
+
+  // 删除评论
+  Future<void> _deleteComment(CommentModel comment) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Comment'),
+        content: const Text('Are you sure you want to delete this comment?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        // 删除评论
+        await _firestore.collection('comments').doc(comment.id).delete();
+
+        // 更新帖子的评论计数
+        await _firestore.collection('posts').doc(widget.postId).update({
+          'comments': FieldValue.increment(-1),
+        });
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete comment: $e')),
+        );
+      }
+    }
   }
 
   // 构建详情页图片
@@ -218,5 +564,24 @@ class PostDetailScreen extends StatelessWidget {
   String _formatDetailTimestamp(Timestamp timestamp) {
     final date = timestamp.toDate();
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _formatCommentTimestamp(Timestamp timestamp) {
+    final date = timestamp.toDate();
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inMinutes < 1) return 'Just now';
+    if (difference.inHours < 1) return '${difference.inMinutes}m ago';
+    if (difference.inDays < 1) return '${difference.inHours}h ago';
+    if (difference.inDays < 7) return '${difference.inDays}d ago';
+    
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
   }
 }
