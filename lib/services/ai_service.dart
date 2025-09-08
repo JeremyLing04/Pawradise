@@ -20,7 +20,6 @@ class AIService {
     // 获取用户名（使用displayName或email用户名）
     final userName = user.displayName ?? 
                   (user.email != null ? user.email!.split('@')[0] : "Pet Lover");
-
     // 检查是否已经有聊天记录
     final existingMessages = await _firestore
         .collection('chat_messages')
@@ -73,7 +72,6 @@ class AIService {
         'Content-Type': 'application/json',
       };
 
-      // 修改提示词部分 - 让回复更简洁
       final Map<String, dynamic> requestBody = {
         "contents": [
           {
@@ -81,22 +79,22 @@ class AIService {
               {
                 "text": '''You are PawPal, a professional dog expert AI assistant. You MUST respond in ENGLISH only.
 
-      User question: "$userMessage"
+                User question: "$userMessage"
 
-      Provide concise and practical dog advice. Keep responses under 150 words.
+                Provide concise and practical dog advice. Keep responses under 150 words.
 
-      Focus on:
-      - Key insights and main solutions
-      - Most important actionable tips
-      - Critical warning signs if any
+                Focus on:
+                - Key insights and main solutions
+                - Most important actionable tips
+                - Critical warning signs if any
 
-      Be professional yet friendly. Use 1-2 relevant emojis.
+                Be professional yet friendly. Use 1-2 relevant emojis.
 
-      CRITICAL: 
-      - RESPOND IN ENGLISH ONLY
-      - KEEP RESPONSES CONCISE (under 150 words)
-      - NO UNNECESSARY DETAILS
-      - GET STRAIGHT TO THE POINT'''
+                CRITICAL: 
+                - RESPOND IN ENGLISH ONLY
+                - KEEP RESPONSES CONCISE (under 150 words)
+                - NO UNNECESSARY DETAILS
+                - GET STRAIGHT TO THE POINT'''
               }
             ]
           }
