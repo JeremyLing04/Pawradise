@@ -5,6 +5,8 @@ import 'create_post_screen.dart';
 import 'post_detail_screen.dart';
 import 'widgets/post_card.dart';
 import '../../models/post_model.dart';
+import 'friends_screen.dart';
+import 'chat_list_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -14,31 +16,99 @@ class CommunityScreen extends StatefulWidget {
 }
 
 class _CommunityScreenState extends State<CommunityScreen> {
-  String _selectedFilter = 'all'; // 'all', 'discussion', 'alert', 'event'
-  final List<String> _filterOptions = [
-    'all',
-    'discussion',
-    'alert',
-    'event'
-  ];
+  String _selectedFilter = 'all';
+  final List<String> _filterOptions = ['all', 'discussion', 'alert', 'event'];
+  int _currentTabIndex = 0;
+  final TextEditingController _searchController = TextEditingController();
 
-  // 获取过滤后的Stream
+  // 获取探索页面的帖子流
   Stream<QuerySnapshot> get _filteredPosts {
-    if (_selectedFilter == 'all') {
-      return FirebaseFirestore.instance
-          .collection('posts')
-          .orderBy('createdAt', descending: true)
-          .snapshots();
-    } else {
-      return FirebaseFirestore.instance
-          .collection('posts')
-          .where('type', isEqualTo: _selectedFilter)
-          .orderBy('createdAt', descending: true)
-          .snapshots();
-    }
+    final query = _selectedFilter == 'all'
+        ? FirebaseFirestore.instance
+            .collection('posts')
+            .orderBy('createdAt', descending: true)
+        : FirebaseFirestore.instance
+            .collection('posts')
+            .where('type', isEqualTo: _selectedFilter)
+            .orderBy('createdAt', descending: true);
+
+    return query.snapshots();
   }
 
-  // 获取过滤器显示的文本
+  // 修复：移除有问题的 _followingPosts getter，使用下面的 _buildFollowingPosts 方法
+
+  // 更好的解决方案：使用不同的方法处理关注页面
+  Widget _buildFollowingPosts() {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      return const Center(child: Text('Please sign in to see followed posts'));
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('friendships')
+          .where('followerId', isEqualTo: currentUser.uid)
+          .where('status', isEqualTo: 'accepted')
+          .snapshots(),
+      builder: (context, friendshipsSnapshot) {
+        if (friendshipsSnapshot.hasError) {
+          return Center(child: Text('Error: ${friendshipsSnapshot.error}'));
+        }
+
+        if (friendshipsSnapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (friendshipsSnapshot.data!.docs.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.people_outline, size: 48, color: Colors.grey),
+                const SizedBox(height: 16),
+                const Text(
+                  'You are not following anyone yet.',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const FriendsScreen()),
+                  ),
+                  child: const Text('Find friends to follow'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final followingIds = friendshipsSnapshot.data!.docs
+            .map((doc) => doc['followingId'] as String)
+            .toList();
+
+        return StreamBuilder<QuerySnapshot>(
+          stream: _selectedFilter == 'all'
+              ? FirebaseFirestore.instance
+                  .collection('posts')
+                  .where('authorId', whereIn: followingIds)
+                  .orderBy('createdAt', descending: true)
+                  .snapshots()
+              : FirebaseFirestore.instance
+                  .collection('posts')
+                  .where('authorId', whereIn: followingIds)
+                  .where('type', isEqualTo: _selectedFilter)
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
+          builder: (context, postsSnapshot) {
+            return _buildPostsListFromSnapshot(postsSnapshot, true);
+          },
+        );
+      },
+    );
+  }
+
   String _getFilterLabel(String filter) {
     switch (filter) {
       case 'all':
@@ -58,89 +128,165 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Community Board',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true, // 标题居中
+        title: _currentTabIndex == 0
+            ? const Text(
+                'Community',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              )
+            : const Text(
+                'Following',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+        centerTitle: true,
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
-        // 移除了actions中的PopupMenuButton
-      ),
-      body: Column(
-        children: [
-          // 快速过滤器按钮栏
-          _buildQuickFilterBar(),
-          
-          // 帖子列表
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _filteredPosts,
-              builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (snapshot.data!.docs.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _getFilterIcon(_selectedFilter),
-                          size: 48,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _selectedFilter == 'all'
-                              ? 'No posts found. Be the first to post!'
-                              : 'No ${_getFilterLabel(_selectedFilter).toLowerCase()} found',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: snapshot.data!.docs.length,
-                  itemBuilder: (context, index) {
-                    final doc = snapshot.data!.docs[index];
-                    final post = PostModel.fromFireStore(doc);
-                    
-                    return PostCard(
-                      post: post, 
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PostDetailScreen(postId: doc.id),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () => _showSearch(context),
+          ),
+          IconButton(
+            icon: const Icon(Icons.chat),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ChatListScreen()),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.people),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const FriendsScreen()),
             ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const CreatePostScreen()),
+      body: Column(
+        children: [
+          // 导航标签
+          _buildNavigationTabs(),
+          
+          // 快速过滤器按钮栏（只在探索页面显示）
+          if (_currentTabIndex == 0) _buildQuickFilterBar(),
+          
+          // 帖子列表
+          Expanded(
+            child: _currentTabIndex == 0
+                ? StreamBuilder<QuerySnapshot>(
+                    stream: _filteredPosts,
+                    builder: (context, snapshot) {
+                      return _buildPostsListFromSnapshot(snapshot, false);
+                    },
+                  )
+                : _buildFollowingPosts(),
+          ),
+        ],
+      ),
+      floatingActionButton: _currentTabIndex == 0
+          ? FloatingActionButton(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CreatePostScreen()),
+              ),
+              backgroundColor: Colors.green,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
+    );
+  }
+
+  // 从快照构建帖子列表
+  Widget _buildPostsListFromSnapshot(AsyncSnapshot<QuerySnapshot> snapshot, bool isFollowingPage) {
+    if (snapshot.hasError) {
+      return Center(child: Text('Error: ${snapshot.error}'));
+    }
+
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isFollowingPage ? Icons.people_outline : _getFilterIcon(_selectedFilter),
+              size: 48,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isFollowingPage
+                  ? 'No posts from followed users'
+                  : _selectedFilter == 'all'
+                      ? 'No posts found. Be the first to post!'
+                      : 'No ${_getFilterLabel(_selectedFilter).toLowerCase()} found',
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
-        backgroundColor: Colors.green,
-        child: const Icon(Icons.add, color: Colors.white),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: snapshot.data!.docs.length,
+      itemBuilder: (context, index) {
+        final doc = snapshot.data!.docs[index];
+        final post = PostModel.fromFireStore(doc);
+        
+        return PostCard(
+          post: post, 
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PostDetailScreen(postId: doc.id),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // 构建导航标签
+  Widget _buildNavigationTabs() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildTabButton('Explore', 0),
+          ),
+          Expanded(
+            child: _buildTabButton('Following', 1),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabButton(String label, int index) {
+    final isSelected = _currentTabIndex == index;
+    return TextButton(
+      onPressed: () => setState(() => _currentTabIndex = index),
+      style: TextButton.styleFrom(
+        foregroundColor: isSelected ? Colors.green : Colors.grey,
+        backgroundColor: isSelected ? Colors.green.withValues(alpha: 0x1A, red: 0, green: 0, blue: 0) : Colors.transparent,
+        shape: const RoundedRectangleBorder(),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
       ),
     );
   }
@@ -166,7 +312,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   });
                 },
                 backgroundColor: Colors.white,
-                selectedColor: Colors.green.withOpacity(0.2),
+                selectedColor: Colors.green.withValues(alpha: 0x33, red: 0, green: 0, blue: 0),
                 checkmarkColor: Colors.green,
                 labelStyle: TextStyle(
                   color: isSelected ? Colors.green : Colors.grey[700],
@@ -187,6 +333,33 @@ class _CommunityScreenState extends State<CommunityScreen> {
             );
           }).toList(),
         ),
+      ),
+    );
+  }
+
+  // 显示搜索
+  void _showSearch(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Search'),
+        content: TextField(
+          controller: _searchController,
+          decoration: const InputDecoration(hintText: 'Search posts or users...'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              // 实现搜索功能
+              Navigator.pop(context);
+            },
+            child: const Text('Search'),
+          ),
+        ],
       ),
     );
   }
