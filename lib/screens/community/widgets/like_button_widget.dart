@@ -118,7 +118,7 @@ class _LikedButtonWidgetState extends State<LikeButtonWidget>{
             return Icon(
               isLiked ? Icons.favorite : Icons.favorite_border,
               color: isLiked ? Colors.red : Colors.grey,
-              size: 28,
+              size: 20,
             );
           },
           countBuilder: (int? count, bool isLiked, String text){

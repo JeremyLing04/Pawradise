@@ -92,6 +92,10 @@ class PostCard extends StatelessWidget {
                         postId: post.id!,
                         initialLikes: post.likes,
                       ),
+                      Text(
+                        '${post.likes}',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
                       const SizedBox(width: 16),
                       Icon(Icons.comment, size: 16, color: Colors.grey[600]),
                       const SizedBox(width: 4),
