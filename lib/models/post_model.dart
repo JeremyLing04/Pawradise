@@ -47,6 +47,24 @@ class PostModel {
     );
   }
 
+  // 从 Map 创建 PostModel（备用方法）
+  factory PostModel.fromMap(Map<String, dynamic> map, {String? id}) {
+    return PostModel(
+      id: id,
+      authorId: map['authorId'] ?? '',
+      authorName: map['authorName'] ?? '',
+      title: map['title'] ?? '',
+      content: map['content'] ?? '',
+      type: map['type'] ?? 'discussion',
+      likes: (map['likes'] ?? 0).toInt(),
+      comments: (map['comments'] ?? 0).toInt(),
+      isResolved: map['isResolved'] ?? false,
+      createdAt: map['createdAt'] ?? Timestamp.now(),
+      hasImage: map['hasImage'] ?? false,
+      imageUrl: map['imageUrl'] ?? '',
+    );
+  }
+
   Map<String, dynamic> toMap(){
     return {
       'authorId': authorId,
@@ -97,4 +115,14 @@ class PostModel {
   String toString(){
     return 'PostModel(id: $id, title, $title, type: $type)';
   }
+
+  @override
+  bool operator ==(Object other) =>
+    identical(this, other) || 
+    other is PostModel &&
+      runtimeType == other.runtimeType &&
+      id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
