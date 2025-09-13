@@ -1,11 +1,19 @@
+//dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:pawradise/screens/map/map_screen.dart';
 import '../constants.dart';
 import 'community/community_screen.dart';
-import '';
-import '';
+
 import 'profile/pet_list_screen.dart'; // 修改为pet_list_screen
+
 import 'schedule/schedule_screen.dart';
+
+import 'chat/ai_chat_screen.dart';
+import 'profile/add_edit_pet_screen.dart';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/pet_service.dart';
+import '../models/pet_model.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -137,33 +145,66 @@ class _DashboardContent extends StatelessWidget {
 
   // 宠物卡片横向列表 - 添加导航
   Widget _buildPetsSection(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return Text(
+        "Please log in to see your pets",
+        style: TextStyle(color: AppColors.textSecondary),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("My Pets", style: TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary
-        )),
+        Text(
+          "My Pets",
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 140,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            children: [
-              _buildPetCard("Buddy", "Golden Retriever"),
-              const SizedBox(width: 12),
-              _buildPetCard("Milo", "Corgi"),
-              const SizedBox(width: 12),
-              _buildAddPetCard(context), // 传递context
-            ],
+          height: 160,
+          child: StreamBuilder<List<Pet>>(
+            stream: PetService().getPetsByUserStream(user.uid),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return Row(
+                  children: [
+                    _buildAddPetCard(context),
+                  ],
+                );
+              }
+
+              final pets = snapshot.data!;
+
+              return ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: pets.length + 1, // 最后一个是 Add Pet
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (context, index) {
+                  if (index < pets.length) {
+                    final pet = pets[index];
+                    return _buildPetCard(pet);
+                  } else {
+                    return _buildAddPetCard(context);
+                  }
+                },
+              );
+            },
           ),
         ),
       ],
     );
   }
 
-  Widget _buildPetCard(String name, String breed) {
+  Widget _buildPetCard(Pet pet) {
     return Card(
       elevation: 4,
       color: AppColors.primary,
@@ -176,7 +217,13 @@ class _DashboardContent extends StatelessWidget {
             CircleAvatar(
               radius: 30,
               backgroundColor: AppColors.accent,
-              child: Icon(Icons.pets, size: 32, color: AppColors.primary),
+              backgroundImage:
+                  (pet.imageUrl != null && pet.imageUrl!.isNotEmpty)
+                      ? NetworkImage(pet.imageUrl!)
+                      : null,
+              child: (pet.imageUrl == null || pet.imageUrl!.isEmpty)
+                  ? Icon(Icons.pets, size: 32, color: AppColors.primary)
+                  : null,
             ),
             const SizedBox(height: 8),
             Expanded(
@@ -184,7 +231,7 @@ class _DashboardContent extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    name,
+                    pet.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -195,7 +242,7 @@ class _DashboardContent extends StatelessWidget {
                     textAlign: TextAlign.center,
                   ),
                   Text(
-                    breed,
+                    pet.breed,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -213,13 +260,13 @@ class _DashboardContent extends StatelessWidget {
     );
   }
 
+
   Widget _buildAddPetCard(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // 导航到宠物列表页面
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => PetListScreen()),
+          MaterialPageRoute(builder: (context) => AddEditPetScreen()),
         );
       },
       child: Card(
@@ -234,17 +281,18 @@ class _DashboardContent extends StatelessWidget {
             children: [
               Icon(Icons.add_circle, size: 40, color: Colors.white),
               SizedBox(height: 12),
-              Text("Add Pet", style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.white
-              )),
+              Text(
+                "Add Pet",
+                style: TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
             ],
           ),
         ),
       ),
     );
   }
+
 
   // 今日提醒
   Widget _buildRemindersBubble() {
@@ -405,7 +453,10 @@ class _DashboardContent extends StatelessWidget {
           childAspectRatio: 1.8,
           children: [
             _buildActionButton(Icons.chat, "Ask PawPal", AppColors.primary, () {
-              // TODO: 跳转到AI聊天
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AIChatScreen()),
+              );
             }),
             _buildActionButton(Icons.add_circle, "New Post", AppColors.secondary, () {
               _switchToCommunity(context);

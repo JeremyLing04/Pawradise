@@ -10,7 +10,7 @@ import '../../services/pet_service.dart';
 class AddEditPetScreen extends StatefulWidget {
   final Pet? pet;
   
-  const AddEditPetScreen({super.key, this.pet}); // 移除 required userId 参数
+  const AddEditPetScreen({super.key, this.pet});
 
   @override
   State<AddEditPetScreen> createState() => _AddEditPetScreenState();
@@ -61,6 +61,26 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
     }
   }
 
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   Future<void> _savePet() async {
     if (!_formKey.currentState!.validate() || _userId == null) return;
 
@@ -71,7 +91,7 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
     try {
       final pet = Pet(
         id: widget.pet?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        ownerId: _userId!, // 使用获取到的 userId
+        ownerId: _userId!,
         name: _nameController.text,
         breed: _breedController.text,
         age: int.tryParse(_ageController.text) ?? 0,
@@ -82,21 +102,15 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
 
       if (widget.pet == null) {
         await _petService.addPet(pet, imageFile: _selectedImage);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Pet added successfully!')),
-        );
+        _showSuccessSnackBar('Pet added successfully!');
       } else {
         await _petService.updatePet(pet, imageFile: _selectedImage);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Pet updated successfully!')),
-        );
+        _showSuccessSnackBar('Pet updated successfully!');
       }
       
       Navigator.pop(context, true);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
+      _showErrorSnackBar('Error: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -130,14 +144,10 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
 
       try {
         await _petService.deletePet(widget.pet!.id, widget.pet!.imageUrl);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Pet deleted successfully!')),
-        );
+        _showSuccessSnackBar('Pet deleted successfully!');
         Navigator.pop(context, true);
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        _showErrorSnackBar('Error: $e');
       } finally {
         setState(() {
           _isLoading = false;
@@ -416,15 +426,15 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
         filled: true,
         fillColor: Colors.grey.shade50,
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        // 添加以下属性来确保错误信息完整显示
         errorStyle: TextStyle(
-          fontSize: 12, // 减小字体大小
-          height: 1.2, // 调整行高
+          fontSize: 12,
+          height: 1.2,
         ),
-        errorMaxLines: 2, // 允许最多2行错误文本
+        errorMaxLines: 2,
       ),
     );
   }
+  
   String? _validateRequired(String? value) {
     if (value == null || value.isEmpty) {
       return 'This field is required';
