@@ -22,6 +22,7 @@ class _AddEventDialogState extends State<AddEventDialog> {
   DateTime _selectedTime = DateTime.now();
   EventType _selectedType = EventType.other;
   int _notificationMinutes = 30;
+  bool _shareToCommunity = false;
 
   //initialize
   @override
@@ -113,6 +114,18 @@ class _AddEventDialogState extends State<AddEventDialog> {
                   );
                 },
               ),
+
+              // 分享到社区选项
+              SwitchListTile(
+                title: const Text('Share to Community'),
+                subtitle: const Text('Other pet owners can join your activity'),
+                value: _shareToCommunity,
+                onChanged: (value) {
+                  setState(() {
+                    _shareToCommunity = value;
+                  });
+                },
+              ),
             ],
           ),
         ),
@@ -168,10 +181,14 @@ class _AddEventDialogState extends State<AddEventDialog> {
         isCompleted: false,
         createdAt: DateTime.now(),
         notificationMinutes: _notificationMinutes,
+        sharedToCommunity: _shareToCommunity,
       );
 
       // add event 到 Firestore
-      Provider.of<EventProvider>(context, listen: false).addEvent(event);
+      Provider.of<EventProvider>(
+        context,
+        listen: false,
+      ).addEvent(event, shareToCommunity: _shareToCommunity);
 
       // close dialog
       Navigator.pop(context);

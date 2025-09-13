@@ -2,10 +2,12 @@ import 'package:flutter/foundation.dart';
 import '../models/event_model.dart';
 import '../services/database_service.dart';
 import '../services/notification_service.dart';
+import '../services/community_service.dart';
 
 class EventProvider with ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
   final NotificationService _notificationService = NotificationService();
+  final CommunityService _communityService = CommunityService();
 
   List<Event> _events = [];
   List<Event> get events => _events;
@@ -23,7 +25,7 @@ class EventProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addEvent(Event event) async {
+  Future<void> addEvent(Event event, {bool shareToCommunity = false}) async {
     await _firestoreService.addEvent(event);
 
     final notificationTime = event.scheduledTime.subtract(
@@ -36,6 +38,11 @@ class EventProvider with ChangeNotifier {
       body: event.description ?? 'Time for ${event.type.displayName}',
       scheduledTime: notificationTime,
     );
+
+    // 分享到社区
+    if (shareToCommunity) {
+      await _communityService.shareEventToCommunity(event);
+    }
 
     _events.add(event);
     notifyListeners();

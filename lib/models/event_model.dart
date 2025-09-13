@@ -11,6 +11,7 @@ class Event {
   final bool isCompleted;
   final DateTime createdAt;
   final int notificationMinutes;
+  final bool sharedToCommunity;
 
   Event({
     required this.id,
@@ -23,6 +24,7 @@ class Event {
     this.isCompleted = false,
     required this.createdAt,
     this.notificationMinutes = 30,
+    this.sharedToCommunity = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -37,6 +39,7 @@ class Event {
       'isCompleted': isCompleted ? 1 : 0,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'notificationMinutes': notificationMinutes,
+      'sharedToCommunity': sharedToCommunity ? 1 : 0,
     };
   }
 
@@ -55,6 +58,7 @@ class Event {
       isCompleted: map['isCompleted'] == 1,
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt']),
       notificationMinutes: map['notificationMinutes'] ?? 30,
+      sharedToCommunity: map['sharedToCommunity'] == 1,
     );
   }
 }
