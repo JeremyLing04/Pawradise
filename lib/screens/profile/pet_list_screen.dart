@@ -8,7 +8,6 @@ import '../../constants.dart';
 import '../../models/pet_model.dart';
 import '../../services/pet_service.dart';
 import 'add_edit_pet_screen.dart';
-import '../chat/ai_chat_screen.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -30,23 +29,18 @@ class _PetListScreenState extends State<PetListScreen> with SingleTickerProvider
   bool _isUploadingAvatar = false;
   String _userBio = "";
   final TextEditingController _bioController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
   
   late TabController _tabController;
-  int _currentTabIndex = 0;
   
-  // 添加变量来保存宠物列表，避免每次切换tab都重新获取
   List<Pet> _pets = [];
+  bool _isEditingProfile = false;
 
   @override
   void initState() {
     super.initState();
     
     _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() {
-      setState(() {
-        _currentTabIndex = _tabController.index;
-      });
-    });
     
     _getCurrentUserImmediately();
     
@@ -76,6 +70,7 @@ class _PetListScreenState extends State<PetListScreen> with SingleTickerProvider
       _userName = user.displayName ?? 
                 (user.email != null ? user.email!.split('@')[0] : "Pet Lover");
       _userAvatarUrl = user.photoURL;
+      _nameController.text = _userName;
     });
     
     await _loadUserDataFromFirestore();
@@ -94,8 +89,13 @@ class _PetListScreenState extends State<PetListScreen> with SingleTickerProvider
         final data = userDoc.data();
         setState(() {
           _userBio = data?['bio'] ?? "";
+          _bioController.text = _userBio;
           if (_userAvatarUrl == null && data?['avatarUrl'] != null) {
             _userAvatarUrl = data?['avatarUrl'];
+          }
+          if (data?['name'] != null) {
+            _userName = data?['name'];
+            _nameController.text = _userName;
           }
         });
       }
@@ -104,65 +104,51 @@ class _PetListScreenState extends State<PetListScreen> with SingleTickerProvider
     }
   }
 
-  Future<void> _saveBioToFirestore(String bio) async {
+  Future<void> _saveUserProfile() async {
     if (_userId == null) return;
     
     try {
+      // 更新 Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(_userId)
           .update({
-            'bio': bio,
+            'name': _nameController.text.trim(),
+            'bio': _bioController.text.trim(),
             'updatedAt': FieldValue.serverTimestamp(),
           });
       
+      // 更新 Firebase Auth 中的显示名称
+      await _auth.currentUser?.updateDisplayName(_nameController.text.trim());
+      
       setState(() {
-        _userBio = bio;
+        _userName = _nameController.text.trim();
+        _userBio = _bioController.text.trim();
+        _isEditingProfile = false;
       });
       
-      _showSuccessSnackBar('Bio updated successfully!');
+      _showSuccessSnackBar('Profile updated successfully!');
     } catch (e) {
-      _showErrorSnackBar('Failed to update bio: $e');
+      _showErrorSnackBar('Failed to update profile: $e');
     }
   }
 
-  void _showEditBioDialog() {
-    _bioController.text = _userBio;
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Edit Bio'),
-        content: TextField(
-          controller: _bioController,
-          maxLength: 150,
-          maxLines: 3,
-          decoration: InputDecoration(
-            hintText: 'Tell us about yourself and your pets...',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _saveBioToFirestore(_bioController.text.trim());
-            },
-            child: Text('Save'),
-          ),
-        ],
-      ),
-    );
+  void _toggleEditProfile() {
+    setState(() {
+      _isEditingProfile = !_isEditingProfile;
+      if (!_isEditingProfile) {
+        // 取消编辑时恢复原值
+        _nameController.text = _userName;
+        _bioController.text = _userBio;
+      }
+    });
   }
 
   @override
   void dispose() {
     _authSubscription?.cancel();
     _bioController.dispose();
+    _nameController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -299,7 +285,6 @@ Future<void> _uploadAvatar(File imageFile) async {
     final snapshot = await uploadTask;
     final downloadUrl = await snapshot.ref.getDownloadURL();
     
-    // 修复：使用命名参数语法
     await _auth.currentUser?.updatePhotoURL(downloadUrl);
     
     await FirebaseFirestore.instance
@@ -367,7 +352,6 @@ Future<void> _removeAvatar() async {
         print('File not found in storage: $e');
       }
       
-      // 修复：使用命名参数语法，设置为null来移除头像
       await _auth.currentUser?.updatePhotoURL(null);
       
       await _removeAvatarUrlFromFirestore();
@@ -432,7 +416,10 @@ Future<void> _removeAvatar() async {
       MaterialPageRoute(
         builder: (context) => AddEditPetScreen(), 
       ),
-    );
+    ).then((_) {
+      // 刷新宠物列表
+      setState(() {});
+    });
   }
 
   void _navigateToEditPet(Pet pet) {
@@ -443,7 +430,15 @@ Future<void> _removeAvatar() async {
       MaterialPageRoute(
         builder: (context) => AddEditPetScreen(pet: pet),
       ),
-    );
+    ).then((_) {
+      // 刷新宠物列表
+      setState(() {});
+    });
+  }
+
+  // Add the missing method
+  Widget _buildUserPostsTab() {
+    return _PostsTabContent(userId: _userId);
   }
 
   @override
@@ -455,7 +450,7 @@ Future<void> _removeAvatar() async {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'My Furry Friends',
+          'My Profile',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -468,19 +463,9 @@ Future<void> _removeAvatar() async {
         elevation: 0,
         actions: [
           IconButton(
-            icon: Icon(Icons.chat, color: AppColors.accent),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AIChatScreen()),
-              );
-            },
-            tooltip: 'Ask PawPal AI',
-          ),
-          IconButton(
-            icon: Icon(Icons.add, color: AppColors.accent),
-            onPressed: _navigateToAddPet,
-            tooltip: 'Add new pet',
+            icon: Icon(_isEditingProfile ? Icons.check : Icons.edit, color: AppColors.accent),
+            onPressed: _isEditingProfile ? _saveUserProfile : _toggleEditProfile,
+            tooltip: _isEditingProfile ? 'Save Profile' : 'Edit Profile',
           ),
         ],
       ),
@@ -516,13 +501,12 @@ Future<void> _removeAvatar() async {
             );
           }
           
-          // 保存宠物列表到变量中，避免每次切换tab都重新获取
           _pets = snapshot.data ?? [];
           
           return Column(
             children: [
               _buildUserWelcome(),
-              _buildTabBar(), // TabBar 现在在用户欢迎区域下方
+              _buildTabBar(),
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
@@ -530,7 +514,7 @@ Future<void> _removeAvatar() async {
                     // Tab 1: User Posts
                     _buildUserPostsTab(),
                     
-                    // Tab 2: Pets List (原来的内容)
+                    // Tab 2: Pets List
                     _buildPetTabContent(_pets),
                   ],
                 ),
@@ -544,36 +528,49 @@ Future<void> _removeAvatar() async {
 
   Widget _buildUserWelcome() {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 15), // 原来 24,25
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       color: AppColors.primary,
       child: Column(
-        mainAxisSize: MainAxisSize.min, // 防止撑开太高
+        mainAxisSize: MainAxisSize.min,
         children: [
           _buildUserAvatar(),
-          SizedBox(height: 10), // 原来 15
-          Text(
-            _userName,
-            style: TextStyle(
-              fontSize: 24, // 原来 34
-              fontWeight: FontWeight.bold,
-              color: AppColors.accent,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 6), // 原来 10
+          SizedBox(height: 10),
+          _isEditingProfile
+              ? TextFormField(
+                  controller: _nameController,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.accent,
+                  ),
+                  textAlign: TextAlign.center,
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                )
+              : Text(
+                  _userName,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.accent,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+          SizedBox(height: 6),
           Container(
-            width: 80, // 原来 120
-            height: 2, // 原来 3
+            width: 80,
+            height: 2,
             color: AppColors.secondary,
           ),
-          SizedBox(height: 8), // 原来 12
+          SizedBox(height: 8),
           _buildBioSection(),
         ],
       ),
     );
   }
 
-  // 修改 _buildTabBar() 方法
   Widget _buildTabBar() {
     return Container(
       decoration: BoxDecoration(
@@ -610,89 +607,239 @@ Future<void> _removeAvatar() async {
   }
 
   Widget _buildPetTabContent(List<Pet> pets) {
-    return Column(
-      children: [
-        // 将 "Caring for X pets" 放在这里
-        Container(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppColors.accent.withAlpha(40),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          margin: EdgeInsets.all(16),
-          child: Text(
-            pets.isEmpty 
-              ? 'Ready to welcome your first furry friend? 🐾' 
-              : 'Caring for ${pets.length} adorable pet${pets.length > 1 ? 's' : ''} ❤️',
-            style: TextStyle(
-              fontSize: 15,
-              color: AppColors.accent,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-        // 宠物列表或空状态
-        Expanded(
-          child: pets.isEmpty
-              ? _buildEmptyState()
-              : _buildPetList(pets),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildUserPostsTab() {
-    // 使用 AutomaticKeepAliveClientMixin 来保持状态
-    return _PostsTabContent(userId: _userId);
-  }
-
-  Widget _buildBioSection() {
-  return GestureDetector(
-    onTap: _showEditBioDialog,
-    child: Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8), // 缩小
-      decoration: BoxDecoration(
-        color: AppColors.accent.withAlpha(20),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return pets.isEmpty
+        ? _buildEmptyState()
+        : ListView(
+            padding: EdgeInsets.only(bottom: 16),
             children: [
-              Text(
-                'About Me',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.accent),
+              // 宠物数量信息 - 现在在列表顶部，会随列表滚动
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withAlpha(40),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                child: Text(
+                  'Caring for ${pets.length} adorable pet${pets.length > 1 ? 's' : ''} ❤️',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
-              Icon(Icons.edit, size: 14, color: AppColors.accent.withAlpha(150)),
+              
+              // 宠物列表
+              ...pets.map((pet) => _buildPetCard(pet)).toList(),
+              
+              // 添加新宠物按钮（在列表底部）
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(25),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton.icon(
+                  onPressed: _navigateToAddPet,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    elevation: 0,
+                  ),
+                  icon: Icon(Icons.add, size: 20),
+                  label: Text(
+                    'Add New Pet',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
             ],
-          ),
-          SizedBox(height: 6),
-          Text(
-            _userBio.isEmpty ? 'Tap to add a bio...' : _userBio,
-            style: TextStyle(
-              fontSize: 12, // 原来 13
+          );
+  }
+
+  Widget _buildEmptyState() {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(30),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withAlpha(80),
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.primary, width: 2),
+            ),
+            child: Icon(
+              Icons.pets,
+              size: 60,
               color: AppColors.accent,
             ),
+          ),
+          SizedBox(height: 25),
+          Text(
+            'No Pets Yet',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: AppColors.accent,
+            ),
+          ),
+          SizedBox(height: 10),
+          Text(
+            'Your furry friends will appear here\nStart by adding your first pet!',
+            style: TextStyle(
+              fontSize: 16,
+              color: AppColors.textSecondary,
+              height: 1.4,
+            ),
             textAlign: TextAlign.center,
-            maxLines: 2, // 原来 3
-            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: 40),
+          // 在空状态下添加一个按钮
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(25),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ElevatedButton.icon(
+              onPressed: _navigateToAddPet,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              icon: Icon(Icons.add, size: 20),
+              label: Text(
+                'Add Your First Pet',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
           ),
         ],
       ),
-    ),
-  );
-}
+    );
+  }
 
+  Widget _buildBioSection() {
+    return GestureDetector(
+      onTap: _isEditingProfile ? () {
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text('Edit Bio'),
+              content: TextField(
+                controller: _bioController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: 'Tell us about yourself and your pets...',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _userBio = _bioController.text;
+                    });
+                    Navigator.pop(context);
+                    _saveUserProfile(); // 保存更改
+                  },
+                  child: Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      } : null, // 不在编辑模式时，onTap 为 null，不会响应点击
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.accent.withAlpha(20),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'About Me',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.accent),
+                ),
+                _isEditingProfile
+                    ? Icon(Icons.edit, size: 14, color: AppColors.accent.withAlpha(150))
+                    : SizedBox(),
+              ],
+            ),
+            SizedBox(height: 6),
+            _isEditingProfile
+                ? TextFormField(
+                    controller: _bioController,
+                    maxLines: 2,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.accent,
+                    ),
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.zero,
+                      hintText: 'Tell us about yourself and your pets...',
+                      hintStyle: TextStyle(
+                        color: AppColors.accent.withAlpha(150),
+                      ),
+                    ),
+                  )
+                : Text(
+                    _userBio.isEmpty ? 'Tap to add a bio...' : _userBio,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.accent,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildUserAvatar() {
     return Stack(
       children: [
         GestureDetector(
-          onTap: _showAvatarOptions,
+          onTap: _isEditingProfile ? _showAvatarOptions : null,
           child: Container(
             width: 80,
             height: 80,
@@ -734,48 +881,33 @@ Future<void> _removeAvatar() async {
                           errorBuilder: (context, error, stackTrace) {
                             return _buildDefaultAvatar();
                           },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              color: AppColors.secondary,
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  color: AppColors.primary,
-                                  strokeWidth: 3,
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                      : null,
-                                ),
-                              ),
-                            );
-                          },
                         )
                       : _buildDefaultAvatar(),
             ),
           ),
         ),
-        Positioned(
-          bottom: 0,
-          right: 0,
-          child: Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: AppColors.secondary,
-              shape: BoxShape.circle,
-              border: Border.all(
+        if (_isEditingProfile)
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: AppColors.secondary,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.primary,
+                  width: 2,
+                ),
+              ),
+              child: Icon(
+                Icons.camera_alt,
+                size: 12,
                 color: AppColors.primary,
-                width: 2,
               ),
             ),
-            child: Icon(
-              Icons.camera_alt,
-              size: 12,
-              color: AppColors.primary,
-            ),
           ),
-        ),
       ],
     );
   }
@@ -796,182 +928,108 @@ Future<void> _removeAvatar() async {
     );
   }
 
-  Widget _buildPetList(List<Pet> pets) {
-    return ListView.builder(
-      padding: EdgeInsets.all(20),
-      itemCount: pets.length,
-      itemBuilder: (context, index) {
-        return _buildPetCard(pets[index]);
-      },
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(30),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha(80),
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.primary, width: 2),
-              ),
-              child: Icon(
-                Icons.pets,
-                size: 60,
-                color: AppColors.accent,
-              ),
-            ),
-            SizedBox(height: 25),
-            Text(
-              'No Pets Yet',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: AppColors.accent,
-              ),
-            ),
-            SizedBox(height: 10),
-            Text(
-              'Your furry friends will appear here\nStart by adding your first pet!',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 25),
-            ElevatedButton(
-              onPressed: _navigateToAddPet,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                elevation: 3,
-              ),
-              child: Text(
-                'Add Your First Pet',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-            ),
-          ],
-        ),
+ Widget _buildPetCard(Pet pet) {
+  return Container(
+    margin: EdgeInsets.only(bottom: 18),
+    child: Card(
+      elevation: 6,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
       ),
-    );
-  }
-
-  Widget _buildPetCard(Pet pet) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 18),
-      child: Card(
-        elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        color: Colors.white,
-        child: InkWell(
-          onTap: () => _navigateToEditPet(pet),
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildPetImage(pet),
-                  SizedBox(width: 16),
-                  
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
+      color: Colors.white,
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildPetImage(pet),
+              SizedBox(width: 16),
+              
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      pet.name,
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.accent,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 4),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
                       children: [
-                        Text(
-                          pet.name,
-                          style: TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.accent,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(height: 4),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.emoji_nature, size: 14, color: AppColors.textSecondary),
-                                SizedBox(width: 4),
-                                Text(
-                                  pet.breed,
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.cake, size: 14, color: AppColors.textSecondary),
-                                SizedBox(width: 4),
-                                Text(
-                                  '${pet.age} years',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
+                            Icon(Icons.emoji_nature, size: 14, color: AppColors.textSecondary),
+                            SizedBox(width: 4),
+                            Text(
+                              pet.breed,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                           ],
                         ),
-                        if (pet.notes != null && pet.notes!.isNotEmpty) ...[
-                          SizedBox(height: 4),
-                          Text(
-                            '📝 ${pet.notes!}',
-                            style: TextStyle(
-                              fontStyle: FontStyle.italic,
-                              color: AppColors.textSecondary.withAlpha(180),
-                              fontSize: 12,
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.cake, size: 14, color: AppColors.textSecondary),
+                            SizedBox(width: 4),
+                            Text(
+                              '${pet.age} years',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                          ],
+                        ),
                       ],
                     ),
-                  ),
-                  SizedBox(width: 8),
-                  
-                  IconButton(
-                    icon: Icon(Icons.edit, size: 22, color: AppColors.primary),
-                    onPressed: () => _navigateToEditPet(pet),
-                    padding: EdgeInsets.zero,
-                    constraints: BoxConstraints(),
-                  ),
-                ],
+                    if (pet.notes != null && pet.notes!.isNotEmpty) ...[
+                      SizedBox(height: 4),
+                      Text(
+                        '📝 ${pet.notes!}',
+                        style: TextStyle(
+                          fontStyle: FontStyle.italic,
+                          color: AppColors.textSecondary.withAlpha(180),
+                          fontSize: 12,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
               ),
-            ),
+              SizedBox(width: 8),
+              
+              // 只有编辑图标有点击事件
+              InkWell(
+                onTap: () => _navigateToEditPet(pet),
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(Icons.edit, size: 22, color: AppColors.primary),
+                ),
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildPetImage(Pet pet) {
     if (pet.imageUrl != null && pet.imageUrl!.isNotEmpty) {
