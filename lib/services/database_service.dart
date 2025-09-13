@@ -3,9 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../providers/event_provider.dart';
 import '../../services/notification_service.dart';
-import 'calendar_screen.dart';
+import '../screens/schedule/calendar_screen.dart';
 import '../../constants.dart';
-import 'add_event.dart';
+import '../screens/schedule/add_event.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
 class ScheduleScreen extends StatefulWidget {
