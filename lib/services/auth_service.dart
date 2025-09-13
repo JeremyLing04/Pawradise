@@ -1,3 +1,4 @@
+//services/auth_service.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -100,6 +101,7 @@ Future<User?> signIn(String email, String password) async {
     }
   }
 
+  // services/auth_service.dart
   Future<void> _createUserDocument(String userId, String email, String username) async {
     print('📝 Creating Firestore document for user: $userId');
     
@@ -107,6 +109,7 @@ Future<User?> signIn(String email, String password) async {
       await _firestore.collection('users').doc(userId).set({
         'email': email,
         'username': username,
+        'bio': '', // ✅ 新增 bio 字段，默认为空
         'karmaPoints': 0,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
