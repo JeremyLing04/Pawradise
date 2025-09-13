@@ -13,6 +13,7 @@ class PostModel {
   final Timestamp createdAt;
   final bool hasImage;
   final String imageUrl;
+  final List<String> keywords; // 新增关键词字段
 
   PostModel({
     this.id,
@@ -27,9 +28,10 @@ class PostModel {
     required this.createdAt,
     this.hasImage = false,
     this.imageUrl = '',
+    required this.keywords, // 新增
   });
 
-  factory PostModel.fromFireStore(DocumentSnapshot doc){
+  factory PostModel.fromFireStore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return PostModel(
       id: doc.id,
@@ -44,6 +46,7 @@ class PostModel {
       createdAt: data['createdAt'] ?? Timestamp.now(),
       hasImage: data['hasImage'] ?? false,
       imageUrl: data['imageUrl'] ?? '',
+      keywords: List<String>.from(data['keywords'] ?? []), // 新增
     );
   }
 
@@ -62,10 +65,11 @@ class PostModel {
       createdAt: map['createdAt'] ?? Timestamp.now(),
       hasImage: map['hasImage'] ?? false,
       imageUrl: map['imageUrl'] ?? '',
+      keywords: List<String>.from(map['keywords'] ?? []), // 新增
     );
   }
 
-  Map<String, dynamic> toMap(){
+  Map<String, dynamic> toMap() {
     return {
       'authorId': authorId,
       'authorName': authorName,
@@ -78,7 +82,68 @@ class PostModel {
       'createdAt': createdAt,
       'hasImage': hasImage,
       'imageUrl': imageUrl,
+      'keywords': keywords, // 新增
     };
+  }
+
+  // 静态方法：生成搜索关键词
+  static List<String> generateKeywords(String title, String content) {
+    if (title.isEmpty && content.isEmpty) return [];
+    
+    String combinedText = '$title $content'
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^\w\s\u4e00-\u9fa5]'), '') // 保留字母、数字、空格和中文
+        .replaceAll(RegExp(r'\s+'), ' ');
+    
+    List<String> words = combinedText.split(' ');
+    Set<String> keywords = {};
+    
+    // 添加整个短语
+    if (combinedText.length > 2) {
+      keywords.add(combinedText);
+    }
+    
+    // 添加所有单词
+    for (String word in words) {
+      if (word.length > 1) {
+        keywords.add(word);
+      }
+    }
+    
+    // 添加所有可能的前缀（用于自动补全）
+    for (String word in words) {
+      for (int i = 1; i <= word.length; i++) {
+        String prefix = word.substring(0, i);
+        if (prefix.length > 1) {
+          keywords.add(prefix);
+        }
+      }
+    }
+    
+    return keywords.toList();
+  }
+
+  // 创建新帖子时的便捷方法，自动生成关键词
+  factory PostModel.createNew({
+    required String authorId,
+    required String authorName,
+    required String title,
+    required String content,
+    required String type,
+    bool hasImage = false,
+    String imageUrl = '',
+  }) {
+    return PostModel(
+      authorId: authorId,
+      authorName: authorName,
+      title: title,
+      content: content,
+      type: type,
+      createdAt: Timestamp.now(),
+      hasImage: hasImage,
+      imageUrl: imageUrl,
+      keywords: generateKeywords(title, content), // 自动生成关键词
+    );
   }
 
   PostModel copyWith({
@@ -94,7 +159,8 @@ class PostModel {
     Timestamp? createdAt,
     bool? hasImage,
     String? imageUrl,
-  }){
+    List<String>? keywords, // 新增
+  }) {
     return PostModel(
       id: id ?? this.id,
       authorId: authorId ?? this.authorId,
@@ -108,20 +174,21 @@ class PostModel {
       createdAt: createdAt ?? this.createdAt,
       hasImage: hasImage ?? this.hasImage,
       imageUrl: imageUrl ?? this.imageUrl,
+      keywords: keywords ?? this.keywords, // 新增
     );
   }
 
   @override
-  String toString(){
-    return 'PostModel(id: $id, title, $title, type: $type)';
+  String toString() {
+    return 'PostModel(id: $id, title: $title, type: $type, keywords: $keywords)';
   }
 
   @override
   bool operator ==(Object other) =>
-    identical(this, other) || 
-    other is PostModel &&
-      runtimeType == other.runtimeType &&
-      id == other.id;
+      identical(this, other) ||
+      other is PostModel &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
 
   @override
   int get hashCode => id.hashCode;

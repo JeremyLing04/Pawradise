@@ -4,8 +4,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pawradise/screens/community/widgets/like_button_widget.dart';
 import 'package:pawradise/screens/community/widgets/comment_like_button.dart';
+import 'package:pawradise/services/friends_service.dart';
 import '../../models/post_model.dart';
 import '../../models/comment_model.dart';
+import 'profile_screen.dart'; // 导入 ProfileScreen
 
 class PostDetailScreen extends StatefulWidget {
   final String postId;
@@ -23,6 +25,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   bool _isLoadingComment = false;
   bool _showComments = false;
   final ScrollController _scrollController = ScrollController();
+  // 在类顶部添加这些变量
+  bool _isFollowingAuthor = false;
+  bool _isCurrentUserPost = false;
+  final FriendsService _friendsService = FriendsService();
 
   @override
   void initState() {
@@ -30,7 +36,117 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     // 页面加载时自动展开评论
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() => _showComments = true);
+      _checkIfCurrentUserPost();
+      _checkFollowStatus();
     });
+  }
+
+  void _checkIfCurrentUserPost(){
+    final currentUser = _auth.currentUser;
+    if(currentUser != null){
+
+    }
+  }
+
+  // 检查关注状态
+  Future<void> _checkFollowStatus() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return;
+
+    // 等待帖子数据加载
+    final postDoc = await _firestore.collection('posts').doc(widget.postId).get();
+    if (!postDoc.exists) return;
+
+    final post = PostModel.fromFireStore(postDoc);
+    setState(() {
+      _isCurrentUserPost = currentUser.uid == post.authorId;
+    });
+
+    if (!_isCurrentUserPost) {
+      try {
+        final isFollowing = await _friendsService.isFollowing(post.authorId);
+        if (mounted) {
+          setState(() {
+            _isFollowingAuthor = isFollowing;
+          });
+        }
+      } catch (e) {
+        debugPrint('Error checking follow status: $e');
+      }
+    }
+  }
+
+  // 构建关注按钮 - 文字样式
+  Widget _buildFollowButton(String authorId) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: Container(
+        height: 32,
+        child: ElevatedButton(
+          onPressed: () => _toggleFollow(authorId),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _isFollowingAuthor ? Colors.green : Colors.white,
+            foregroundColor: _isFollowingAuthor ? Colors.white : Colors.green,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            elevation: 0,
+            side: BorderSide(
+              color: _isFollowingAuthor ? Colors.white : Colors.green,
+              width: 1.5,
+            ),
+          ),
+          child: Text(
+            _isFollowingAuthor ? 'Following' : 'Follow',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: _isFollowingAuthor ? Colors.white : Colors.green,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 切换关注状态
+  Future<void> _toggleFollow(String authorId) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please sign in to follow users')),
+      );
+      return;
+    }
+
+    try {
+      if (_isFollowingAuthor) {
+        await _friendsService.unfollowUser(authorId);
+        if (mounted) {
+          setState(() {
+            _isFollowingAuthor = false;
+          });
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unfollowed successfully')),
+        );
+      } else {
+        await _friendsService.followUser(authorId);
+        if (mounted) {
+          setState(() {
+            _isFollowingAuthor = true;
+          });
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Followed successfully')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Operation failed: $e')),
+      );
+    }
   }
 
   // 构建自定义 App Bar
@@ -42,36 +158,49 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         icon: const Icon(Icons.arrow_back),
         onPressed: () => Navigator.of(context).pop(),
       ),
-      title: Row(
-        children: [
-          // 用户头像
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: Colors.white,
-            child: Text(
-              post.authorName[0],
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.green,
-                fontWeight: FontWeight.bold,
+      title: GestureDetector(
+        onTap: () => _navigateToProfile(post.authorId),
+        child: Row(
+          children: [
+            // 用户头像 - 可点击
+            GestureDetector(
+              onTap: () => _navigateToProfile(post.authorId),
+              child: CircleAvatar(
+                radius: 16,
+                backgroundColor: Colors.white,
+                child: Text(
+                  post.authorName[0],
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          // 用户名
-          Expanded(
-            child: Text(
-              post.authorName,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+            const SizedBox(width: 12),
+            // 用户名 - 可点击
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _navigateToProfile(post.authorId),
+                child: Text(
+                  post.authorName,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       actions: [
+        // 如果不是当前用户的帖子，显示关注按钮
+        if (_auth.currentUser != null && _auth.currentUser!.uid != post.authorId)
+          _buildFollowButton(post.authorId),
+        
         // 帖子类型徽章
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -89,6 +218,16 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  // 导航到用户个人资料页面
+  void _navigateToProfile(String userId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfileScreen(userId: userId),
+      ),
     );
   }
 
@@ -114,7 +253,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           }
 
           final post = PostModel.fromFireStore(postSnapshot.data!);
-
+          
+          // 检查是否是当前用户的帖子
+          final currentUser = _auth.currentUser;
+          if (currentUser != null) {
+            _isCurrentUserPost = currentUser.uid == post.authorId;
+          }
+          
           return Column(
             children: [
               // 自定义 App Bar
@@ -367,7 +512,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
-  // 构建单个评论项
+  // 构建单个评论项 - 添加点击跳转到用户资料功能
   Widget _buildCommentItem(CommentModel comment) {
     final isCurrentUser = _auth.currentUser?.uid == comment.authorId;
 
@@ -382,31 +527,35 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: Colors.green,
-                child: Text(
-                  comment.authorName[0],
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+          // 用户信息行 - 可点击
+          GestureDetector(
+            onTap: () => _navigateToProfile(comment.authorId),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: Colors.green,
+                  child: Text(
+                    comment.authorName[0],
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  comment.authorName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    comment.authorName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 8),
           Text(
