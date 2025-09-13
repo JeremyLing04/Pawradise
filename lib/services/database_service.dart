@@ -1,64 +1,48 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../providers/event_provider.dart';
-import '../../services/notification_service.dart';
-import '../screens/schedule/calendar_screen.dart';
-import '../../constants.dart';
-import '../screens/schedule/add_event.dart';
-import 'package:timezone/data/latest.dart' as tz;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/event_model.dart';
 
-class ScheduleScreen extends StatefulWidget {
-  const ScheduleScreen({super.key});
+class FirestoreService {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  @override
-  State<ScheduleScreen> createState() => _ScheduleScreenState();
-}
-
-class _ScheduleScreenState extends State<ScheduleScreen> {
-  DateTime _selectedDate = DateTime.now();
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Initialize notification service
-    tz.initializeTimeZones();
-    NotificationService().initialize();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-    final userId = FirebaseAuth.instance.currentUser!.uid;
-    final eventProvider = Provider.of<EventProvider>(context, listen: false);
-    eventProvider.initialize(userId);
-    });
+  Future<void> addEvent(Event event) async {
+    await _db
+        .collection('users')
+        .doc(event.userId)
+        .collection('events')
+        .doc(event.id)
+        .set(event.toMap());
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: CalendarView(
-        onDateSelected: (date) {
-          setState(() {
-            _selectedDate = date; // 更新选中的日期
-          });
-        },
-      ), // 只显示日历视图
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddEventDialog(context),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.accent,
-        child: const Icon(Icons.add),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-    );
+  Future<void> updateEvent(Event event) async {
+    await _db
+        .collection('users')
+        .doc(event.userId)
+        .collection('events')
+        .doc(event.id)
+        .update(event.toMap());
   }
 
-  void _showAddEventDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AddEventDialog(selectedDate: _selectedDate);
-      },
-    );
+  Future<void> deleteEvent(String userId, String eventId) async {
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('events')
+        .doc(eventId)
+        .delete();
+  }
+
+  Future<List<Event>> getEvents(String userId) async {
+    final snapshot = await _db
+        .collection('users')
+        .doc(userId)
+        .collection('events')
+        .orderBy('scheduledTime')
+        .get();
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id; // 确保 event.id 正确
+      return Event.fromMap(data);
+    }).toList();
   }
 }
