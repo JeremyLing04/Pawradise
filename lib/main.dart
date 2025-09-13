@@ -17,6 +17,9 @@ import 'screens/auth/register.dart';
 import 'screens/profile/pet_list_screen.dart';
 import 'screens/profile/add_edit_pet_screen.dart';
 
+// splash screen import
+import 'screens/splash_screen.dart'; // Import the SplashScreen
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -30,13 +33,16 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Pawradise',
       theme: AppTheme.lightTheme,
-      initialRoute: '/dashboard',
+      initialRoute: '/splash',
+      // initialRoute: '/dashboard',
       routes: {
+        '/splash': (context) => SplashScreen(),
         '/': (context) => Login(),
         '/register': (context) => Register(),
         '/dashboard': (context) => DashboardScreen(),

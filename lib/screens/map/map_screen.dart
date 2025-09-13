@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
 import '../../models/location_model.dart';
-import 'package:permission_handler/permission_handler.dart'
-    as permission_handler;
+import 'package:permission_handler/permission_handler.dart' as permission_handler;
 import 'package:permission_handler/permission_handler.dart';
 import '../../models/places_service.dart';
 
@@ -18,32 +17,38 @@ class _MapScreenState extends State<MapScreen> {
   late GoogleMapController mapController;
   final Location _location = Location();
 
-  LatLng _initialPosition = const LatLng(
-    3.1390,
-    101.6869,
-  ); // Default: Kuala Lumpur
+  LatLng _initialPosition = const LatLng(3.1390, 101.6869); // Default: Kuala Lumpur
   List<LocationModel> nearbyLocations = [];
-  bool _isListExpanded = false; // Flag to track list expansion
+  bool _isListExpanded = true; // Flag to track list expansion
+  BitmapDescriptor? customMarker; // Custom marker
 
   @override
   void initState() {
     super.initState();
+    _loadMarker(); // Load the custom marker color
     requestLocationPermission(); // Request location permission when app starts
+  }
+
+  // Load the custom marker color directly without using then
+  Future<void> _loadMarker() async {
+    customMarker = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure);
+    setState(() {
+      // Marker is now ready
+    });
   }
 
   // Request location permission at runtime
   void requestLocationPermission() async {
-    permission_handler.PermissionStatus status = await permission_handler
-        .Permission
-        .location
-        .request();
+    permission_handler.PermissionStatus status = await permission_handler.Permission.location.request();
 
     if (status.isGranted) {
       _setCurrentLocation(); // Permissions granted, now fetch current location
     } else if (status.isDenied) {
-      print('Location permission denied');
+      // Show SnackBar if permission is denied
+      _showSnackBar('Location permission denied. Please grant it to use this feature.');
     } else if (status.isPermanentlyDenied) {
-      openAppSettings(); // Open app settings for the user to manually allow permission
+      // Show AlertDialog if permission is permanently denied
+      _showAlertDialog();
     }
   }
 
@@ -86,6 +91,43 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
+  // Show SnackBar with a message
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  // Show an AlertDialog when permission is permanently denied
+  void _showAlertDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Location Permission Denied'),
+          content: Text('Please enable location permissions in the app settings.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                openAppSettings(); // Open app settings to allow permission
+              },
+              child: Text('Go to Settings'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // Create markers for each nearby location
   Set<Marker> _getMarkers() {
     return nearbyLocations.map((location) {
@@ -96,7 +138,7 @@ class _MapScreenState extends State<MapScreen> {
           title: location.name,
           snippet: "${location.rating} ⭐ - ${location.category}",
         ),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        icon: customMarker ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure), // Use custom marker or default
       );
     }).toSet();
   }
@@ -111,15 +153,14 @@ class _MapScreenState extends State<MapScreen> {
           margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-          ), // Rounded corners for cards
+          ),
           elevation: 5, // Adding shadow for better visibility
+          color: Color.fromRGBO(236, 185, 44, 1),
           child: ListTile(
-            contentPadding: const EdgeInsets.all(
-              12.0,
-            ), // Padding inside each card
+            contentPadding: const EdgeInsets.all(12.0), // Padding inside each card
             leading: Icon(
               Icons.pets,
-              color: const Color.fromARGB(255, 231, 75, 148),
+              color: const Color.fromARGB(255, 97, 72, 3),
               size: 40,
             ), // Add pet-friendly icon
             title: Text(
@@ -145,7 +186,7 @@ class _MapScreenState extends State<MapScreen> {
     mapController.animateCamera(
       CameraUpdate.newLatLngZoom(
         LatLng(location.latitude, location.longitude),
-        15,
+        20,
       ),
     );
   }
@@ -162,11 +203,10 @@ class _MapScreenState extends State<MapScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Dog-Friendly Map'),
-        backgroundColor: Color(0xFFB98C6D), // Light brown color for app bar
+        backgroundColor: Color.fromARGB(255, 243, 199, 79),
       ),
       body: Column(
         children: [
-          // Google Map
           Expanded(
             child: GoogleMap(
               onMapCreated: (controller) => mapController = controller,
@@ -179,7 +219,6 @@ class _MapScreenState extends State<MapScreen> {
               markers: _getMarkers(), // Show only nearby places as markers
             ),
           ),
-          // IconButton to expand/collapse the list with an arrow
           IconButton(
             icon: Icon(
               _isListExpanded
@@ -194,12 +233,11 @@ class _MapScreenState extends State<MapScreen> {
             ),
             onPressed: _toggleListExpansion,
           ),
-          // Collapsing/Expanding List of nearby pet-friendly places
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             height: _isListExpanded
-                ? 500
-                : 0, // Increase the height to make the list bigger
+                ? 400 // The height when expanded
+                : 0,  // The height when collapsed
             child: _buildNearbyLocationList(),
           ),
         ],
