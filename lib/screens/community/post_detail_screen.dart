@@ -393,7 +393,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       ),
     );
   }
-  // 构建事件加入按钮和参加人数徽章
+  
+  // 构建事件加入按钮
   Widget _buildEventJoinButton(PostModel post) {
     final CommunityService communityService = CommunityService();
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
@@ -406,32 +407,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
         return Row(
           children: [
-            // 所有事件帖子都显示参加人数徽章
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.green, width: 1),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.people, size: 16, color: Colors.green[700]),
-                  const SizedBox(width: 4),
-                  Text(
-                    '$participantCount',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green[700],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // 参加人数徽章...
             
-            // 只有不是自己的帖子才显示加入按钮
+            // 加入按钮
             if (!isOwnPost) 
               FutureBuilder<bool>(
                 future: communityService.isUserJoined(widget.postId),
@@ -442,7 +420,15 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                     margin: const EdgeInsets.only(left: 12),
                     child: ElevatedButton(
                       onPressed: () {
-                        communityService.joinEvent(widget.postId, widget.postId);
+                        communityService.joinEvent(
+                          widget.postId, 
+                          widget.postId, 
+                          context,
+                          eventTitle: post.title,
+                          eventTime: post.eventTime ?? DateTime.now().add(Duration(hours: 1)),
+                          eventDescription: post.eventDescription ?? post.content,
+                          authorName: post.authorName,
+                        );
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text(isJoined ? 'Left ${post.title}' : 'Joined ${post.title}')),
                         );

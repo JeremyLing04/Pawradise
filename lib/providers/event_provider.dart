@@ -1,4 +1,5 @@
 //providers/event_provider,
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/event_model.dart';
 import '../services/database_service.dart';
@@ -98,5 +99,27 @@ class EventProvider with ChangeNotifier {
     if (minutes < 60) return '$minutes minutes early';
     if (minutes == 60) return '1 hour';
     return '${minutes ~/ 60} hours ${minutes % 60} minutes early';
+  }
+
+  // 在 EventProvider 中添加加载加入事件的方法
+  Future<void> loadJoinedEvents(String userId) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('joined_events')
+          .get();
+
+      final joinedEvents = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return Event.fromMap(data);
+      }).toList();
+
+      // 将加入的事件合并到主事件列表中
+      _events.addAll(joinedEvents);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error loading joined events: $e');
+    }
   }
 }

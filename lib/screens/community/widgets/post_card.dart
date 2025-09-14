@@ -150,12 +150,10 @@ class PostCard extends StatelessWidget {
         if (post.type == 'event' && eventId != null)
           Row(
             children: [
-              // 所有事件帖子都显示参加人数徽章
               _buildParticipantBadge(context, communityService),
               
-              // 只有不是自己的帖子才显示加入按钮
               if (!isOwnPost) 
-                _buildEventJoinButton(context, communityService, currentUserId),
+                _buildEventJoinButton(context, communityService, currentUserId, post), // 传递 post 参数
             ],
           ),
       ],
@@ -197,8 +195,8 @@ class PostCard extends StatelessWidget {
     );
   }
 
-  // 构建活动加入按钮（用于其他人的帖子）
-  Widget _buildEventJoinButton(BuildContext context, CommunityService communityService, String? currentUserId) {
+  // 构建活动加入按钮
+  Widget _buildEventJoinButton(BuildContext context, CommunityService communityService, String? currentUserId, PostModel post) {
     return FutureBuilder<bool>(
       future: communityService.isUserJoined(eventId!),
       builder: (context, joinSnapshot) {
@@ -208,7 +206,15 @@ class PostCard extends StatelessWidget {
           margin: const EdgeInsets.only(left: 8),
           child: ElevatedButton(
             onPressed: () {
-              communityService.joinEvent(post.id!, eventId!);
+              communityService.joinEvent(
+                post.id!, 
+                eventId!, 
+                context,
+                eventTitle: post.title,
+                eventTime: post.eventTime ?? DateTime.now().add(Duration(hours: 1)),
+                eventDescription: post.eventDescription ?? post.content,
+                authorName: post.authorName,
+              );
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(isJoined ? 'Left ${post.title}' : 'Joined ${post.title}')),
               );

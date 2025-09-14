@@ -1,7 +1,5 @@
-//models/event_model.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 
 class Event {
   final String id;
@@ -38,33 +36,81 @@ class Event {
       'title': title,
       'description': description,
       'type': type.toString().split('.').last,
-      // 'scheduledTime': scheduledTime.millisecondsSinceEpoch,
-      'scheduledTime': Timestamp.fromDate(scheduledTime),
-      'isCompleted': isCompleted ? 1 : 0,
-      // 'createdAt': createdAt.millisecondsSinceEpoch,
-      'createdAt': Timestamp.fromDate(createdAt),
+      'scheduledTime': Timestamp.fromDate(scheduledTime), // 使用 Timestamp
+      'isCompleted': isCompleted,
+      'createdAt': Timestamp.fromDate(createdAt), // 使用 Timestamp
       'notificationMinutes': notificationMinutes,
-      'sharedToCommunity': sharedToCommunity ? 1 : 0,
+      'sharedToCommunity': sharedToCommunity,
     };
   }
 
   factory Event.fromMap(Map<String, dynamic> map) {
+    // 处理 scheduledTime - 支持 Timestamp 和 int 两种格式
+    DateTime parseScheduledTime(dynamic timeData) {
+      if (timeData is Timestamp) {
+        return timeData.toDate();
+      } else if (timeData is int) {
+        return DateTime.fromMillisecondsSinceEpoch(timeData);
+      } else {
+        return DateTime.now();
+      }
+    }
+
+    // 处理 createdAt - 支持 Timestamp 和 int 两种格式
+    DateTime parseCreatedAt(dynamic timeData) {
+      if (timeData is Timestamp) {
+        return timeData.toDate();
+      } else if (timeData is int) {
+        return DateTime.fromMillisecondsSinceEpoch(timeData);
+      } else {
+        return DateTime.now();
+      }
+    }
+
+    // 处理 isCompleted - 支持 bool 和 int 两种格式
+    bool parseIsCompleted(dynamic completedData) {
+      if (completedData is bool) {
+        return completedData;
+      } else if (completedData is int) {
+        return completedData == 1;
+      } else {
+        return false;
+      }
+    }
+
+    // 处理 sharedToCommunity - 支持 bool 和 int 两种格式
+    bool parseSharedToCommunity(dynamic sharedData) {
+      if (sharedData is bool) {
+        return sharedData;
+      } else if (sharedData is int) {
+        return sharedData == 1;
+      } else {
+        return false;
+      }
+    }
+
     return Event(
-      id: map['id'],
-      userId: map['userId'],
-      petId: map['petId'],
-      title: map['title'],
+      id: map['id'] ?? '',
+      userId: map['userId'] ?? '',
+      petId: map['petId'] ?? 'default_pet_id',
+      title: map['title'] ?? '',
       description: map['description'],
       type: EventType.values.firstWhere(
         (e) => e.toString() == 'EventType.${map['type']}',
         orElse: () => EventType.other,
       ),
-      scheduledTime: DateTime.fromMillisecondsSinceEpoch(map['scheduledTime']),
-      isCompleted: map['isCompleted'] == 1,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt']),
-      notificationMinutes: map['notificationMinutes'] ?? 30,
-      sharedToCommunity: map['sharedToCommunity'] == 1,
+      scheduledTime: parseScheduledTime(map['scheduledTime']),
+      isCompleted: parseIsCompleted(map['isCompleted']),
+      createdAt: parseCreatedAt(map['createdAt']),
+      notificationMinutes: (map['notificationMinutes'] ?? 30).toInt(),
+      sharedToCommunity: parseSharedToCommunity(map['sharedToCommunity']),
     );
+  }
+
+  // 添加一个便捷的工厂方法用于从 Firestore 文档创建事件
+  factory Event.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return Event.fromMap({...data, 'id': doc.id});
   }
 }
 
