@@ -511,11 +511,11 @@ Future<void> _removeAvatar() async {
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    // Tab 1: User Posts
-                    _buildUserPostsTab(),
-                    
-                    // Tab 2: Pets List
+                    // Tab 1: Pets List
                     _buildPetTabContent(_pets),
+
+                    // Tab 2: User Posts
+                    _buildUserPostsTab(),
                   ],
                 ),
               ),
@@ -592,13 +592,13 @@ Future<void> _removeAvatar() async {
           Tab(
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
-              child: Text('My Posts'),
+              child: Text('My Pets'), // 原本是 My Posts
             ),
           ),
           Tab(
             child: Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
-              child: Text('My Pets'),
+              child: Text('My Posts'), // 原本是 My Pets
             ),
           ),
         ],

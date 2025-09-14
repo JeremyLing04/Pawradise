@@ -12,28 +12,21 @@ import 'screens/dashboard_screen.dart';
 //map
 import 'package:pawradise/screens/map/map_screen.dart';
 
-//auth
 import 'screens/auth/login.dart';
 import 'screens/auth/register.dart';
-
-//profile
 import 'screens/profile/pet_list_screen.dart';
 import 'screens/profile/add_edit_pet_screen.dart';
-
-// chat
 import 'screens/chat/ai_chat_screen.dart';
 // splash screen import
 import 'screens/splash_screen.dart'; // Import the SplashScreen
 
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await dotenv.load(fileName: ".env");
-
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
   runApp(const MyApp());
 }
 
@@ -47,21 +40,26 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EventProvider()),
         // 可以添加其他 providers
       ],
-      child: MaterialApp(
-        title: 'Pawradise',
-        theme: AppTheme.lightTheme,
-        initialRoute: '/splash',
-        routes: {
-          '/splash': (context) => SplashScreen(),
-          '/': (context) => Login(),
-          '/register': (context) => Register(),
-          '/dashboard': (context) => DashboardScreen(),
-          '/pets': (context) => PetListScreen(),
-          '/pets/add': (context) => AddEditPetScreen(),
-          '/chat': (context) => AIChatScreen(),
+      child: ValueListenableBuilder<bool>(
+        valueListenable: isDarkNotifier,
+        builder: (context, isDark, _) {
+          return MaterialApp(
+            title: 'Pawradise',
+            theme: AppTheme.theme,
+            initialRoute: '/dashboard',
+            routes: {
+              '/splash': (context) => SplashScreen(),
+              '/': (context) => const Login(),
+              '/register': (context) => const Register(),
+              '/dashboard': (context) => _ScreenWithChatButton(child: const DashboardScreen()),
+              '/pets': (context) => _ScreenWithChatButton(child: const PetListScreen()),
+              '/pets/add': (context) => const AddEditPetScreen(),
+              '/chat': (context) => const AIChatScreen(),
+            },
+            debugShowCheckedModeBanner: false,
+          );
         },
-        debugShowCheckedModeBanner: false,
-      ),
+      )
     );
   }
 }
@@ -69,9 +67,9 @@ class MyApp extends StatelessWidget {
 // 包装组件，只在需要的屏幕上添加聊天按钮
 class _ScreenWithChatButton extends StatelessWidget {
   final Widget child;
-  
+
   const _ScreenWithChatButton({required this.child});
-  
+
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -88,9 +86,9 @@ class _ScreenWithChatButton extends StatelessWidget {
             },
             tooltip: 'Ask PawPal AI',
             child: const Icon(
-              Icons.auto_awesome, 
-              size: 30, 
-              color: Colors.white
+              Icons.auto_awesome,
+              size: 30,
+              color: Colors.white,
             ),
           ),
         ),
