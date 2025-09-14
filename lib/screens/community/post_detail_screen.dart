@@ -8,7 +8,7 @@ import 'package:pawradise/services/community_service.dart';
 import 'package:pawradise/services/friends_service.dart';
 import '../../models/post_model.dart';
 import '../../models/comment_model.dart';
-import 'profile_screen.dart'; // 导入 ProfileScreen
+import '../profile/profile_screen.dart'; // 导入 ProfileScreen
 
 class PostDetailScreen extends StatefulWidget {
   final String postId;

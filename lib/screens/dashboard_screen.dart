@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:pawradise/screens/map/map_screen.dart';
 import '../constants.dart';
 import 'community/community_screen.dart';
-import 'profile/pet_list_screen.dart';
+import 'profile/profile_screen.dart';
 import 'schedule/schedule_screen.dart';
 import 'chat/ai_chat_screen.dart';
 import 'profile/add_edit_pet_screen.dart';
@@ -61,7 +61,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 3:
         return const MapScreen();
       case 4:
-        return const PetListScreen();
+        return const ProfileScreen();
       default:
         return const SizedBox.shrink();
     }

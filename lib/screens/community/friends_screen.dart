@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pawradise/services/friends_service.dart';
 import 'package:pawradise/services/chat_service.dart'; // 添加 ChatService
-import 'profile_screen.dart';
+import '../profile/profile_screen.dart';
 import 'chat_screen.dart'; // 导入 ChatScreen
 
 class FriendsScreen extends StatefulWidget {

@@ -6,7 +6,7 @@ import 'widgets/post_card.dart';
 import '../../models/post_model.dart';
 import '../../models/user_model.dart' as app_model; // 添加别名
 import 'post_detail_screen.dart';
-import 'profile_screen.dart';
+import '../profile/profile_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});

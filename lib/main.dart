@@ -14,7 +14,7 @@ import 'package:pawradise/screens/map/map_screen.dart';
 
 import 'screens/auth/login.dart';
 import 'screens/auth/register.dart';
-import 'screens/profile/pet_list_screen.dart';
+import 'screens/profile/profile_screen.dart';
 import 'screens/profile/add_edit_pet_screen.dart';
 import 'screens/chat/ai_chat_screen.dart';
 // splash screen import
@@ -52,7 +52,7 @@ class MyApp extends StatelessWidget {
               '/': (context) => const Login(),
               '/register': (context) => const Register(),
               '/dashboard': (context) => _ScreenWithChatButton(child: const DashboardScreen()),
-              '/pets': (context) => _ScreenWithChatButton(child: const PetListScreen()),
+              '/pets': (context) => _ScreenWithChatButton(child: const ProfileScreen()),
               '/pets/add': (context) => const AddEditPetScreen(),
               '/chat': (context) => const AIChatScreen(),
             },
