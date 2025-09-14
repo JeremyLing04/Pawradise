@@ -198,7 +198,7 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                  valueColor: AlwaysStoppedAnimation(AppColors.background),
                 ),
               ),
             ),
@@ -369,7 +369,7 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
                               width: double.infinity,
                               padding: EdgeInsets.all(24),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: AppColors.background,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: Color(0xFFA78B6D),
@@ -426,7 +426,7 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
                                       onPressed: _isLoading ? null : _savePet,
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: AppColors.accent.withOpacity(0.7),
-                                        foregroundColor: Colors.white,
+                                        foregroundColor: AppColors.background,
                                         padding: EdgeInsets.symmetric(vertical: 16),
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(12),
@@ -466,7 +466,7 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color:AppColors.textPrimary.withOpacity(0.1),
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
@@ -552,18 +552,18 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
       keyboardType: keyboardType,
       maxLines: maxLines,
       validator: validator,
-      style: TextStyle(color: Colors.black87),
+      style: TextStyle(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.black54),
+        labelStyle: TextStyle(color: AppColors.textPrimary),
         prefixIcon: Icon(icon, color: AppColors.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: AppColors.textPrimary),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: AppColors.textPrimary),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

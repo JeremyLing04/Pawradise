@@ -1,3 +1,4 @@
+//models/.dart
 class LocationModel {
   final String id;
   final String name;

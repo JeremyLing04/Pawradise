@@ -33,114 +33,192 @@ class _AddEventDialogState extends State<AddEventDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Add New Event'),
-      content: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              //title
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
-              ),
-
-              //description
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 3,
-              ),
-
-              //event type
-              DropdownButtonFormField<EventType>(
-                value: _selectedType,
-                items: EventType.values.map((type) {
-                  return DropdownMenuItem(
-                    value: type,
-                    child: Text(type.displayName),
-                  );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedType = value!;
-                  });
-                },
-                decoration: const InputDecoration(labelText: 'Event Type'),
-              ),
-
-              //date & time choose
-              ListTile(
-                title: Text(
-                  'Date: ${DateFormat('MMM d, yyyy').format(widget.selectedDate)}',
-                ),
-                subtitle: Text(
-                  'Time: ${DateFormat('hh:mm a').format(_selectedTime)}',
-                ),
-                trailing: const Icon(Icons.edit),
-                onTap: () => _selectTime(context),
-              ),
-              const SizedBox(height: 16),
-
-              //notification min
-              Consumer<EventProvider>(
-                builder: (context, eventProvider, child) {
-                  return DropdownButtonFormField<int>(
-                    value: _notificationMinutes,
-                    items: EventProvider.notificationTimeOptions.map((minutes) {
-                      return DropdownMenuItem(
-                        value: minutes,
-                        child: Text(
-                          EventProvider.getNotificationTimeText(minutes),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _notificationMinutes = value!;
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      labelText: 'Reminder Time',
-                    ),
-                  );
-                },
-              ),
-
-              // 分享到社区选项
-              SwitchListTile(
-                title: const Text('Share to Community'),
-                subtitle: const Text('Other pet owners can join your activity'),
-                value: _shareToCommunity,
-                onChanged: (value) {
-                  setState(() {
-                    _shareToCommunity = value;
-                  });
-                },
-              ),
-            ],
-          ),
+  return AlertDialog(
+    backgroundColor: AppColors.secondary, 
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(25),
+      side: BorderSide(color: AppColors.accent, width: 2),
+    ),
+    title: Center(
+      child: Text(
+        'Add New Event',
+        style: TextStyle(
+          color: AppColors.accent,
+          fontWeight: FontWeight.bold,
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+    ),
+    content: Form(
+      key: _formKey,
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // title
+            TextFormField(
+              controller: _titleController,
+              style: TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                labelText: 'Title',
+                labelStyle: TextStyle(color: AppColors.textSecondary),
+                filled: true,
+                fillColor: AppColors.background.withOpacity(0.5), 
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.accent),
+                ),
+              ),
+              validator: (value) =>
+                  value == null || value.isEmpty ? 'Please enter a title' : null,
+            ),
+            const SizedBox(height: 12),
+
+            // description
+            TextFormField(
+              controller: _descriptionController,
+              maxLines: 3,
+              style: TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                labelText: 'Description',
+                labelStyle: TextStyle(color: AppColors.textSecondary),
+                filled: true,
+                fillColor: AppColors.background.withOpacity(0.5), 
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.accent),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // event type
+            DropdownButtonFormField<EventType>(
+              value: _selectedType,
+              dropdownColor: AppColors.primary, 
+              style: TextStyle(color: AppColors.textPrimary),
+              decoration: InputDecoration(
+                labelText: 'Event Type',
+                labelStyle: TextStyle(color: AppColors.textSecondary),
+                filled: true,
+                fillColor: AppColors.background.withOpacity(0.5),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.accent),
+                ),
+              ),
+              items: EventType.values.map((type) {
+                return DropdownMenuItem(
+                  value: type,
+                  child: Text(type.displayName),
+                );
+              }).toList(),
+              onChanged: (value) => setState(() => _selectedType = value!),
+            ),
+            const SizedBox(height: 12),
+
+            // date & time
+            ListTile(
+              tileColor: AppColors.background.withOpacity(0.5), 
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: AppColors.accent),
+              ),
+              title: Text(
+                'Date: ${DateFormat('MMM d, yyyy').format(widget.selectedDate)}',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
+              subtitle: Text(
+                'Time: ${DateFormat('hh:mm a').format(_selectedTime)}',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              trailing: Icon(Icons.edit, color: AppColors.accent),
+              onTap: () => _selectTime(context),
+            ),
+            const SizedBox(height: 12),
+
+            // reminder
+            Consumer<EventProvider>(
+              builder: (context, eventProvider, child) {
+                return DropdownButtonFormField<int>(
+                  value: _notificationMinutes,
+                  dropdownColor: AppColors.primary, // ✅
+                  style: TextStyle(color: AppColors.textPrimary),
+                  decoration: InputDecoration(
+                    labelText: 'Reminder Time',
+                    labelStyle: TextStyle(color: AppColors.textSecondary),
+                    filled: true,
+                    fillColor: AppColors.background.withOpacity(0.5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: AppColors.accent),
+                    ),
+                  ),
+                  items:
+                      EventProvider.notificationTimeOptions.map((minutes) {
+                    return DropdownMenuItem(
+                      value: minutes,
+                      child: Text(
+                        EventProvider.getNotificationTimeText(minutes),
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) =>
+                      setState(() => _notificationMinutes = value!),
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+
+            // share
+            SwitchListTile(
+              title: Text(
+                'Share to Community',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
+              subtitle: Text(
+                'Other pet owners can join your activity',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+              activeColor: AppColors.accent,
+              value: _shareToCommunity,
+              onChanged: (value) =>
+                  setState(() => _shareToCommunity = value),
+            ),
+          ],
         ),
-        ElevatedButton(
-          onPressed: () => _saveEvent(context),
-          child: const Text('Save'),
+      ),
+    ),
+    actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    actions: [
+      // Cancel 按钮改成 primary 背景 + accent 字体
+      ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: AppColors.accent),
+          ),
         ),
-      ],
-    );
+        onPressed: () => Navigator.pop(context),
+        child: Text('Cancel',
+            style: TextStyle(color: AppColors.accent)),
+      ),
+
+      // Save 按钮 accent 背景 + 白色字体
+      ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.accent.withOpacity(0.7),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onPressed: () => _saveEvent(context),
+        child: const Text('Save',
+            style: TextStyle(color: Colors.white)),
+      ),
+    ],
+  );
   }
 
   //event time

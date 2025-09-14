@@ -156,7 +156,7 @@ class _PetListScreenState extends State<PetListScreen> with SingleTickerProvider
   void _showAvatarOptions() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -652,7 +652,7 @@ Future<void> _removeAvatar() async {
                   onPressed: _navigateToAddPet,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.background,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
@@ -726,7 +726,7 @@ Future<void> _removeAvatar() async {
               onPressed: _navigateToAddPet,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: AppColors.background,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(25),
                 ),
@@ -936,7 +936,7 @@ Future<void> _removeAvatar() async {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
       ),
-      color: Colors.white,
+      color: AppColors.background,
       child: Padding(
         padding: EdgeInsets.all(16),
         child: IntrinsicHeight(
@@ -1070,7 +1070,7 @@ Future<void> _removeAvatar() async {
         child: Icon(
           Icons.pets,
           size: 30,
-          color: Colors.white,
+          color: AppColors.background,
         ),
       );
     }
@@ -1175,7 +1175,7 @@ class __PostsTabContentState extends State<_PostsTabContent> with AutomaticKeepA
     return Container(
       margin: EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
