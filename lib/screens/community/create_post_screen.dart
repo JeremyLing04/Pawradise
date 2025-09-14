@@ -17,10 +17,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _contentController = TextEditingController();
+  final _keywordController = TextEditingController();
   String _selectedType = 'discussion';
   bool _isLoading = false;
   File? _selectedImage;
   bool _isUploadingImage = false;
+  List<String> _keywords = [];
 
   final _postTypes = [
     {'value': 'discussion', 'label': 'Discussion'},
@@ -40,7 +42,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
-          child: Column(
+          child: ListView(
             children: [
               // 帖子类型选择
               DropdownButtonFormField<String>(
@@ -95,6 +97,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 16),
+
+              // 关键词部分
+              _buildKeywordsSection(),
               const SizedBox(height: 24),
 
               // 发布按钮
@@ -119,6 +125,104 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     );
   }
 
+  Widget _buildKeywordsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 标题
+        const Text(
+          'Keywords',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        
+        // 关键词输入和添加按钮
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                controller: _keywordController,
+                decoration: InputDecoration(
+                  hintText: 'Add keyword...',
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.add, color: Colors.green),
+                    onPressed: _addKeyword,
+                  ),
+                ),
+                onFieldSubmitted: (_) => _addKeyword(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: _addKeyword,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              ),
+              child: const Text('Add'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        
+        // 已添加的关键词标签
+        if (_keywords.isNotEmpty)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _keywords.map((keyword) {
+              return Chip(
+                label: Text(keyword),
+                backgroundColor: Colors.green[50],
+                deleteIcon: const Icon(Icons.close, size: 16),
+                onDeleted: () => _removeKeyword(keyword),
+                labelStyle: const TextStyle(color: Colors.green),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(color: Colors.green[300]!),
+                ),
+              );
+            }).toList(),
+          ),
+        
+        // 提示文本
+        if (_keywords.isEmpty)
+          Text(
+            'Add keywords to help others find your post',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[600],
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+      ],
+    );
+  }
+
+  void _addKeyword() {
+    final keyword = _keywordController.text.trim();
+    if (keyword.isNotEmpty && !_keywords.contains(keyword)) {
+      setState(() {
+        _keywords.add(keyword);
+        _keywordController.clear();
+      });
+    }
+  }
+
+  void _removeKeyword(String keyword) {
+    setState(() {
+      _keywords.remove(keyword);
+    });
+  }
+
   Future<void> _createPost() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -137,10 +241,17 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       // 如果有选择图片，先上传图片
       if (_selectedImage != null) {
         setState(() => _isUploadingImage = true);
-        imageUrl = await _uploadImage(_selectedImage!); // 这里正确使用了 await
+        imageUrl = await _uploadImage(_selectedImage!);
         hasImage = true;
         setState(() => _isUploadingImage = false);
       }
+
+      // 生成自动关键词 + 用户手动添加的关键词
+      final autoKeywords = PostModel.generateKeywords(
+        _titleController.text, 
+        _contentController.text
+      );
+      final allKeywords = {...autoKeywords, ..._keywords}.toList();
 
       // 使用 PostModel 创建帖子对象
       final newPost = PostModel(
@@ -155,6 +266,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         createdAt: Timestamp.now(),
         hasImage: hasImage,
         imageUrl: imageUrl,
+        keywords: allKeywords, // 包含自动生成和手动添加的关键词
       );
 
       // 保存到 Firestore
@@ -179,6 +291,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
+    _keywordController.dispose();
     super.dispose();
   }
 
@@ -260,7 +373,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Future<String> _uploadImage(File imageFile) async {
     try {
       final user = FirebaseAuth.instance.currentUser!;
-      // 修复：使用 user.uid 而不是 user.id
       final String fileName = 'posts/${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       
       final Reference storageRef = FirebaseStorage.instance.ref().child(fileName);
