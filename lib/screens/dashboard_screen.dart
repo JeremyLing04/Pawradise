@@ -3,13 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:pawradise/screens/map/map_screen.dart';
 import '../constants.dart';
 import 'community/community_screen.dart';
-import 'profile/pet_list_screen.dart'; // 修改为pet_list_screen
+import 'profile/pet_list_screen.dart';
 import 'schedule/schedule_screen.dart';
 import 'chat/ai_chat_screen.dart';
 import 'profile/add_edit_pet_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/pet_service.dart';
 import '../models/pet_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+import 'community/post_detail_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -52,15 +55,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 0:
         return _buildDashboardContent(FirebaseAuth.instance.currentUser?.displayName ?? "User");
       case 1:
-        return CommunityScreen();
+        return const CommunityScreen();
       case 2:
-        return ScheduleScreen();
+        return const ScheduleScreen();
       case 3:
-        return MapScreen();
+        return const MapScreen();
       case 4:
-        return PetListScreen();
+        return const PetListScreen();
       default:
-        return Container();
+        return const SizedBox.shrink();
     }
   }
 
@@ -88,6 +91,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         SliverToBoxAdapter(
           child: Column(
             children: [
+              // 顶部欢迎区
               Container(
                 height: 180,
                 width: double.infinity,
@@ -115,6 +119,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
               ),
+
+              // 主内容区
               Transform.translate(
                 offset: const Offset(0, -50),
                 child: Container(
@@ -137,9 +143,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     children: [
                       _buildPetsSection(context),
                       const SizedBox(height: 24),
-                      _buildRemindersBubble(),
-                      const SizedBox(height: 24),
                       _buildCommunityPreview(context),
+                      const SizedBox(height: 24),
+                      _buildSchedulePreview(context),
                       const SizedBox(height: 24),
                       _buildQuickActions(context),
                     ],
@@ -158,23 +164,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      return Text(
-        "Please log in to see your pets",
-        style: TextStyle(color: AppColors.textSecondary),
-      );
+      return Text("Please log in to see your pets",
+          style: TextStyle(color: AppColors.textSecondary));
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          "My Pets",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
+        Text("My Pets",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            )),
         const SizedBox(height: 16),
         SizedBox(
           height: 160,
@@ -185,23 +187,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 return const Center(child: CircularProgressIndicator());
               }
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return Row(
-                  children: [
-                    _buildAddPetCard(context),
-                  ],
-                );
+                return Row(children: [_buildAddPetCard(context)]);
               }
 
               final pets = snapshot.data!;
-
               return ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: pets.length + 1,
                 separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
                   if (index < pets.length) {
-                    final pet = pets[index];
-                    return _buildPetCard(pet);
+                    return _buildPetCard(pets[index]);
                   } else {
                     return _buildAddPetCard(context);
                   }
@@ -240,27 +236,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    pet.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: AppColors.accent,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    pet.breed,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.accent.withOpacity(0.8),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+                  Text(pet.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: AppColors.accent),
+                      textAlign: TextAlign.center),
+                  Text(pet.breed,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.accent.withOpacity(0.8)),
+                      textAlign: TextAlign.center),
                 ],
               ),
             ),
@@ -273,10 +263,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildAddPetCard(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => AddEditPetScreen()),
-        );
+        Navigator.push(context,
+            MaterialPageRoute(builder: (context) => const AddEditPetScreen()));
       },
       child: Card(
         elevation: 4,
@@ -290,11 +278,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               Icon(Icons.add_circle, size: 40, color: Colors.white),
               SizedBox(height: 12),
-              Text(
-                "Add Pet",
-                style: TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
+              Text("Add Pet",
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
             ],
           ),
         ),
@@ -302,106 +290,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // 今日提醒
-  Widget _buildRemindersBubble() {
-    return Card(
-      elevation: 4,
-      color: AppColors.secondary,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("Today's Reminders",
-                    style: TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.accent)),
-                Icon(Icons.notifications_active, color: AppColors.accent, size: 24),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _buildBubble("🐕 Walk Buddy", "5:00 PM", AppColors.primary),
-                _buildBubble("💊 Medicine", "7:00 PM", AppColors.accent),
-                _buildBubble(
-                    "🍖 Dinner", "6:00 PM", AppColors.primary.withOpacity(0.8)),
-              ],
-            )
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildBubble(String task, String time, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(task,
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: _getContrastColor(color),
-                  fontSize: 14)),
-          const SizedBox(width: 8),
-          Text(time,
-              style: TextStyle(
-                  fontSize: 12,
-                  color: _getContrastColor(color),
-                  fontWeight: FontWeight.w500)),
-        ],
-      ),
-    );
-  }
-
-  // 社区动态
+  // ------------------ 社区动态 ------------------
   Widget _buildCommunityPreview(BuildContext context) {
-    return Card(
-      elevation: 4,
-      color: AppColors.accent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('posts')
+          .orderBy('createdAt', descending: true)
+          .limit(3)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Text("No community updates yet",
+                  style: TextStyle(color: AppColors.textSecondary)),
+            ),
+          );
+        }
+
+        final posts = snapshot.data!.docs;
+        return Card(
+          elevation: 4,
+          color: AppColors.accent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Community Updates",
-                    style: TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
-                TextButton(
-                    onPressed: () {
-                      _switchToCommunity(context);
-                    },
-                    child: Text("View All",
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Community Updates",
                         style: TextStyle(
-                            color: AppColors.primary, fontWeight: FontWeight.bold))),
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primary)),
+                    TextButton(
+                      onPressed: () => _switchToCommunity(context),
+                      child: Text("View All",
+                          style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Column(
+                  children: posts.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final title = data['title'] ?? 'Untitled';
+                    final likes = (data['likes'] ?? 0).toString();
+                    return _buildCommunityPost(title, "$likes likes", doc.id);
+                  }).toList(),
+                ),
               ],
             ),
-            const SizedBox(height: 12),
-            _buildCommunityPost("🐾 Missing Dog in Central Park", "15 likes"),
-            _buildCommunityPost("🌳 New Dog Park Opening", "32 likes"),
-            _buildCommunityPost("💉 Free Vaccination Event", "28 likes"),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildCommunityPost(String title, String likes) {
+  Widget _buildCommunityPost(String title, String likes, String postId) {
     return ListTile(
       contentPadding: const EdgeInsets.only(top: 8, bottom: 8),
       leading: Container(
@@ -421,16 +377,103 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Icon(Icons.favorite, color: AppColors.primary, size: 16),
           const SizedBox(width: 4),
           Text(likes,
-              style: TextStyle(color: AppColors.primary.withOpacity(0.8), fontSize: 12)),
+              style: TextStyle(
+                  color: AppColors.primary.withOpacity(0.8), fontSize: 12)),
         ],
       ),
       onTap: () {
-        _switchToCommunity(navigatorKey.currentContext!);
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => PostDetailScreen(postId: postId)),
+        );
       },
     );
   }
 
-  // 快速操作
+  // ------------------ 日程预览 ------------------
+  Widget _buildSchedulePreview(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return Text("Please log in to see schedule",
+          style: TextStyle(color: AppColors.textSecondary));
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('events')
+          .orderBy('scheduledTime', descending: false)
+          .limit(3)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Text("No upcoming schedule",
+                  style: TextStyle(color: AppColors.textSecondary)),
+            ),
+          );
+        }
+
+        final events = snapshot.data!.docs;
+        return Card(
+          elevation: 4,
+          color: AppColors.primary,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("Upcoming Schedule",
+                        style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.accent)),
+                    TextButton(
+                      onPressed: () => _switchToSchedule(context),
+                      child: Text("View All",
+                          style: TextStyle(
+                              color: AppColors.accent,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Column(
+                  children: events.map((doc) {
+                    final data = doc.data() as Map<String, dynamic>;
+                    final task = data['title'] ?? 'Untitled';
+                    final scheduledTime = (data['scheduledTime'] as Timestamp).toDate();
+                    final date = DateFormat('MMM d, hh:mm a').format(scheduledTime);
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(Icons.event, color: AppColors.accent),
+                      title: Text(task,
+                          style: TextStyle(
+                              fontWeight: FontWeight.w500, color: AppColors.accent)),
+                      subtitle: Text(date,
+                          style: TextStyle(color: AppColors.accent.withOpacity(0.8))),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ------------------ 快速操作 ------------------
   Widget _buildQuickActions(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,14 +493,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _buildActionButton(Icons.chat, "Ask PawPal", AppColors.primary, () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => AIChatScreen()),
+                MaterialPageRoute(builder: (context) => const AIChatScreen()),
               );
             }),
             _buildActionButton(Icons.add_circle, "New Post", AppColors.secondary, () {
               _switchToCommunity(context);
             }),
-            _buildActionButton(
-                Icons.calendar_today, "Add Event", AppColors.secondary, () {
+            _buildActionButton(Icons.calendar_today, "Add Event", AppColors.secondary, () {
               _switchToSchedule(context);
             }),
             _buildActionButton(Icons.place, "Find Places", AppColors.primary, () {
@@ -499,7 +541,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return brightness > 0.5 ? AppColors.textPrimary : AppColors.background;
   }
 
-  // 导航辅助方法
+  // ------------------ 导航辅助方法 ------------------
   void _switchToCommunity(BuildContext context) {
     setState(() => _selectedIndex = 1);
   }
@@ -512,6 +554,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _selectedIndex = 3);
   }
 }
+
+
+
 
 // 全局导航key
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();

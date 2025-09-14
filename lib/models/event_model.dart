@@ -1,4 +1,7 @@
+//models/event_model.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class Event {
   final String id;
@@ -35,9 +38,11 @@ class Event {
       'title': title,
       'description': description,
       'type': type.toString().split('.').last,
-      'scheduledTime': scheduledTime.millisecondsSinceEpoch,
+      // 'scheduledTime': scheduledTime.millisecondsSinceEpoch,
+      'scheduledTime': Timestamp.fromDate(scheduledTime),
       'isCompleted': isCompleted ? 1 : 0,
-      'createdAt': createdAt.millisecondsSinceEpoch,
+      // 'createdAt': createdAt.millisecondsSinceEpoch,
+      'createdAt': Timestamp.fromDate(createdAt),
       'notificationMinutes': notificationMinutes,
       'sharedToCommunity': sharedToCommunity ? 1 : 0,
     };
