@@ -393,59 +393,77 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       ),
     );
   }
-
-  // 构建事件加入按钮
+  // 构建事件加入按钮和参加人数徽章
   Widget _buildEventJoinButton(PostModel post) {
     final CommunityService communityService = CommunityService();
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final isOwnPost = currentUserId == post.authorId;
 
-    return FutureBuilder<bool>(
-      future: communityService.isUserJoined(widget.postId),
-      builder: (context, joinSnapshot) {
-        final isJoined = joinSnapshot.data ?? false;
-        
-        return FutureBuilder<int>(
-          future: communityService.getParticipantCount(widget.postId),
-          builder: (context, countSnapshot) {
-            final participantCount = countSnapshot.data ?? 0;
+    return FutureBuilder<int>(
+      future: communityService.getParticipantCount(widget.postId),
+      builder: (context, countSnapshot) {
+        final participantCount = countSnapshot.data ?? 0;
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    communityService.joinEvent(widget.postId, widget.postId);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(isJoined ? 'Left ${post.title}' : 'Joined ${post.title}')),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isJoined ? Colors.grey : Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                  child: Text(
-                    isJoined ? 'Joined' : 'Join',
-                    style: const TextStyle(
+        return Row(
+          children: [
+            // 所有事件帖子都显示参加人数徽章
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.green, width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.people, size: 16, color: Colors.green[700]),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$participantCount',
+                    style: TextStyle(
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      color: Colors.green[700],
                     ),
                   ),
-                ),
-                if (participantCount > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      '$participantCount ${participantCount == 1 ? 'person' : 'people'} joined',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
+                ],
+              ),
+            ),
+            
+            // 只有不是自己的帖子才显示加入按钮
+            if (!isOwnPost) 
+              FutureBuilder<bool>(
+                future: communityService.isUserJoined(widget.postId),
+                builder: (context, joinSnapshot) {
+                  final isJoined = joinSnapshot.data ?? false;
+                  
+                  return Container(
+                    margin: const EdgeInsets.only(left: 12),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        communityService.joinEvent(widget.postId, widget.postId);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(isJoined ? 'Left ${post.title}' : 'Joined ${post.title}')),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isJoined ? Colors.grey : Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
+                      child: Text(
+                        isJoined ? 'Joined' : 'Join',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            );
-          },
+                  );
+                },
+              ),
+          ],
         );
       },
     );
