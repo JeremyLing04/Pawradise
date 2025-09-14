@@ -216,6 +216,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
       ),
       floatingActionButton: _currentTabIndex == 0
           ? FloatingActionButton(
+              heroTag: UniqueKey(), // 添加唯一的heroTag
               onPressed: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const CreatePostScreen()),

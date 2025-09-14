@@ -122,7 +122,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         .snapshots()
         .map((snapshot) {
       if (snapshot.exists) {
-        return app_model.User.fromFirestore(snapshot.data()!, snapshot.id);
+        return app_model.User.fromFirestore(snapshot);
       }
       return app_model.User(
         id: widget.userId,

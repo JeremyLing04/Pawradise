@@ -274,7 +274,7 @@ class _SearchScreenState extends State<SearchScreen> {
           itemCount: snapshot.data!.docs.length,
           itemBuilder: (context, index) {
             final doc = snapshot.data!.docs[index];
-            final user = app_model.User.fromFirestore(doc.data() as Map<String, dynamic>, doc.id); // 使用别名
+            final user = app_model.User.fromFirestore(doc); // 使用别名
             
             return ListTile(
               leading: CircleAvatar(
