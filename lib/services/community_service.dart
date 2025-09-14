@@ -223,7 +223,7 @@ $joinText
       await _firestore
           .collection('users')
           .doc(userId)
-          .collection('joined_events')
+          .collection('events')
           .doc(event.id)
           .set(event.toMap());
 
@@ -276,7 +276,7 @@ $joinText
       final eventsSnapshot = await _firestore
           .collection('users')
           .doc(userId)
-          .collection('joined_events')
+          .collection('events')
           .where('id', isGreaterThanOrEqualTo: 'joined_${postId}_')
           .where('id', isLessThan: 'joined_${postId}_z')
           .get();
