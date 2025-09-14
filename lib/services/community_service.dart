@@ -18,17 +18,17 @@ class CommunityService {
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       final username = userDoc['username'] ?? 'Pet Owner';
 
+      // 生成帖子内容
+      final content = _generateEventContent(event);
+      final title = '${event.type.displayName}: ${event.title}';
+
       // 创建社区帖子
-      final post = PostModel(
+      final post = PostModel.createNew(
         authorId: user.uid,
         authorName: username,
-        title: '${event.type.displayName}: ${event.title}',
-        content: _generateEventContent(event),
+        title: title,
+        content: content,
         type: 'event',
-        likes: 0,
-        comments: 0,
-        isResolved: false,
-        createdAt: Timestamp.now(),
         hasImage: false,
         imageUrl: '',
       );
