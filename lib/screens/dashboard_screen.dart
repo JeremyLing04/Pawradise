@@ -1,17 +1,13 @@
-//dashboard_screen.dart
+// dashboard_screen.dart
 import 'package:flutter/material.dart';
 import '../constants.dart';
 import 'community/community_screen.dart';
-
-import 'profile/pet_list_screen.dart'; // 修改为pet_list_screen
+import 'profile/pet_list_screen.dart';
 import 'chat/ai_chat_screen.dart';
 import 'profile/add_edit_pet_screen.dart';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/pet_service.dart';
 import '../models/pet_model.dart';
-
-
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -23,29 +19,49 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
-  // 定义所有页面 - 修改第4个页面为PetListScreen
-  final List<Widget> _pages = [
-    _DashboardContent(),    // 首页内容 (索引0)
-    CommunityScreen(),      // 社区页面 (索引1)
-    Placeholder(),       // 日程页面 (索引2)
-    Placeholder(),            // 地图页面 (索引3)
-    PetListScreen(),        // 修改：宠物列表页面 (索引4)
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() => _selectedIndex = index);
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _selectedIndex == 0 ? AppHeader.buildAppBar() : null,
-      body: _pages[_selectedIndex],
-      bottomNavigationBar: _buildBottomNavigationBar(),
+    return ValueListenableBuilder<bool>(
+      valueListenable: isDarkNotifier,
+      builder: (context, isDark, _) {
+        return Scaffold(
+          appBar: _selectedIndex == 0
+              ? AppHeader.buildAppBar(
+                  context: context,
+                  title: "Pawradise",
+                  actions: [
+                    IconButton(
+                      icon: Icon(Icons.notifications, color: AppColors.textPrimary),
+                      onPressed: () {},
+                    ),
+                  ],
+                )
+              : null,
+          body: _currentPage,
+          bottomNavigationBar: _buildBottomNavigationBar(),
+        );
+      },
     );
   }
 
-  // 底部导航栏
+  // 动态生成当前页面
+  Widget get _currentPage {
+    switch (_selectedIndex) {
+      case 0:
+        return _buildDashboardContent(FirebaseAuth.instance.currentUser?.displayName ?? "User");
+      case 1:
+        return CommunityScreen();
+      case 2:
+        return Placeholder();
+      case 3:
+        return Placeholder();
+      case 4:
+        return PetListScreen();
+      default:
+        return Container();
+    }
+  }
+
   BottomNavigationBar _buildBottomNavigationBar() {
     return BottomNavigationBar(
       items: const [
@@ -53,95 +69,89 @@ class _DashboardScreenState extends State<DashboardScreen> {
         BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Community'),
         BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Schedule'),
         BottomNavigationBarItem(icon: Icon(Icons.map), label: 'Map'),
-        BottomNavigationBarItem(icon: Icon(Icons.pets), label: 'Pets'), // 修改图标和标签
+        BottomNavigationBarItem(icon: Icon(Icons.pets), label: 'Pets'),
       ],
       currentIndex: _selectedIndex,
       selectedItemColor: AppColors.primary,
       unselectedItemColor: AppColors.textSecondary,
-      onTap: _onItemTapped,
+      onTap: (index) => setState(() => _selectedIndex = index),
       type: BottomNavigationBarType.fixed,
     );
   }
-}
 
-// 首页内容组件（保持原来的Dashboard布局）
-class _DashboardContent extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
+  // ------------------ Dashboard Content ------------------
+  Widget _buildDashboardContent(String userName) {
     return CustomScrollView(
       slivers: [
-        // 顶部打招呼区域
         SliverToBoxAdapter(
-          child: Container(
-            height: 130,
-            width: double.infinity,
-            color: AppColors.secondary,
-            padding: const EdgeInsets.only(top: 40, left: 24, right: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Hello, ShengHan!",
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.accent,
+          child: Column(
+            children: [
+              Container(
+                height: 180,
+                width: double.infinity,
+                color: AppColors.secondary,
+                padding: const EdgeInsets.only(top: 40, left: 24, right: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Hello, $userName!",
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.accent,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Welcome back to Pawradise",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppColors.accent.withOpacity(0.8),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Transform.translate(
+                offset: const Offset(0, -50),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(40),
+                      topRight: Radius.circular(40),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.accent.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      _buildPetsSection(context),
+                      const SizedBox(height: 24),
+                      _buildRemindersBubble(),
+                      const SizedBox(height: 24),
+                      _buildCommunityPreview(context),
+                      const SizedBox(height: 24),
+                      _buildQuickActions(context),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  "Welcome back to Pawradise",
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.accent.withOpacity(0.8),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        
-        // 白色内容区域
-        SliverToBoxAdapter(
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppColors.background,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(50),
-                topRight: Radius.circular(50),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.accent.withOpacity(0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: const EdgeInsets.only(top: 40, left: 16, right: 16, bottom: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 20),
-                  _buildPetsSection(context), // 传递context用于导航
-                  const SizedBox(height: 24),
-                  _buildRemindersBubble(),
-                  const SizedBox(height: 24),
-                  _buildCommunityPreview(context),
-                  const SizedBox(height: 24),
-                  _buildQuickActions(context),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
+            ],
           ),
-        ),
+        )
       ],
     );
   }
 
-  // 宠物卡片横向列表 - 添加导航
+  // ------------------ Pets Section ------------------
   Widget _buildPetsSection(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -170,7 +180,7 @@ class _DashboardContent extends StatelessWidget {
             stream: PetService().getPetsByUserStream(user.uid),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator());
+                return const Center(child: CircularProgressIndicator());
               }
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
                 return Row(
@@ -184,7 +194,7 @@ class _DashboardContent extends StatelessWidget {
 
               return ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: pets.length + 1, // 最后一个是 Add Pet
+                itemCount: pets.length + 1,
                 separatorBuilder: (_, __) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
                   if (index < pets.length) {
@@ -258,7 +268,6 @@ class _DashboardContent extends StatelessWidget {
     );
   }
 
-
   Widget _buildAddPetCard(BuildContext context) {
     return GestureDetector(
       onTap: () {
@@ -291,7 +300,6 @@ class _DashboardContent extends StatelessWidget {
     );
   }
 
-
   // 今日提醒
   Widget _buildRemindersBubble() {
     return Card(
@@ -308,10 +316,7 @@ class _DashboardContent extends StatelessWidget {
               children: [
                 Text("Today's Reminders",
                     style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.accent
-                    )),
+                        fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.accent)),
                 Icon(Icons.notifications_active, color: AppColors.accent, size: 24),
               ],
             ),
@@ -322,7 +327,8 @@ class _DashboardContent extends StatelessWidget {
               children: [
                 _buildBubble("🐕 Walk Buddy", "5:00 PM", AppColors.primary),
                 _buildBubble("💊 Medicine", "7:00 PM", AppColors.accent),
-                _buildBubble("🍖 Dinner", "6:00 PM", AppColors.primary.withOpacity(0.8)),
+                _buildBubble(
+                    "🍖 Dinner", "6:00 PM", AppColors.primary.withOpacity(0.8)),
               ],
             )
           ],
@@ -341,17 +347,17 @@ class _DashboardContent extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(task, style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: _getContrastColor(color),
-            fontSize: 14
-          )),
+          Text(task,
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: _getContrastColor(color),
+                  fontSize: 14)),
           const SizedBox(width: 8),
-          Text(time, style: TextStyle(
-            fontSize: 12, 
-            color: _getContrastColor(color),
-            fontWeight: FontWeight.w500
-          )),
+          Text(time,
+              style: TextStyle(
+                  fontSize: 12,
+                  color: _getContrastColor(color),
+                  fontWeight: FontWeight.w500)),
         ],
       ),
     );
@@ -373,19 +379,14 @@ class _DashboardContent extends StatelessWidget {
               children: [
                 Text("Community Updates",
                     style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primary
-                    )),
+                        fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.primary)),
                 TextButton(
-                  onPressed: () {
-                    _switchToCommunity(context);
-                  }, 
-                  child: Text("View All", style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.bold
-                  ))
-                ),
+                    onPressed: () {
+                      _switchToCommunity(context);
+                    },
+                    child: Text("View All",
+                        style: TextStyle(
+                            color: AppColors.primary, fontWeight: FontWeight.bold))),
               ],
             ),
             const SizedBox(height: 12),
@@ -410,19 +411,15 @@ class _DashboardContent extends StatelessWidget {
         ),
         child: Icon(Icons.forum, color: AppColors.primary, size: 20),
       ),
-      title: Text(title, style: TextStyle(
-        color: AppColors.primary,
-        fontWeight: FontWeight.w500
-      )),
+      title: Text(title,
+          style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w500)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.favorite, color: AppColors.primary, size: 16),
           const SizedBox(width: 4),
-          Text(likes, style: TextStyle(
-            color: AppColors.primary.withOpacity(0.8),
-            fontSize: 12
-          )),
+          Text(likes,
+              style: TextStyle(color: AppColors.primary.withOpacity(0.8), fontSize: 12)),
         ],
       ),
       onTap: () {
@@ -436,11 +433,9 @@ class _DashboardContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Quick Actions", style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: AppColors.textPrimary
-        )),
+        Text("Quick Actions",
+            style: TextStyle(
+                fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
         const SizedBox(height: 16),
         GridView.count(
           shrinkWrap: true,
@@ -459,10 +454,11 @@ class _DashboardContent extends StatelessWidget {
             _buildActionButton(Icons.add_circle, "New Post", AppColors.secondary, () {
               _switchToCommunity(context);
             }),
-            _buildActionButton(Icons.calendar_today, "Add Event", AppColors.accent, () {
+            _buildActionButton(
+                Icons.calendar_today, "Add Event", AppColors.secondary, () {
               _switchToSchedule(context);
             }),
-            _buildActionButton(Icons.place, "Find Places", AppColors.primary.withOpacity(0.7), () {
+            _buildActionButton(Icons.place, "Find Places", AppColors.primary, () {
               _switchToMap(context);
             }),
           ],
@@ -471,7 +467,8 @@ class _DashboardContent extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label, Color cardColor, VoidCallback onPressed) {
+  Widget _buildActionButton(
+      IconData icon, String label, Color cardColor, VoidCallback onPressed) {
     return Card(
       elevation: 4,
       color: cardColor,
@@ -483,21 +480,18 @@ class _DashboardContent extends StatelessWidget {
           children: [
             Icon(icon, size: 32, color: _getContrastColor(cardColor)),
             const SizedBox(height: 8),
-            Text(label, 
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _getContrastColor(cardColor),
-                fontWeight: FontWeight.bold,
-                fontSize: 14
-              )
-            ),
+            Text(label,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: _getContrastColor(cardColor),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14)),
           ],
         ),
       ),
     );
   }
 
-  // 辅助函数：根据背景色返回对比度合适的文字颜色
   Color _getContrastColor(Color backgroundColor) {
     final brightness = backgroundColor.computeLuminance();
     return brightness > 0.5 ? AppColors.textPrimary : AppColors.background;
@@ -505,24 +499,15 @@ class _DashboardContent extends StatelessWidget {
 
   // 导航辅助方法
   void _switchToCommunity(BuildContext context) {
-    final dashboardState = context.findAncestorStateOfType<_DashboardScreenState>();
-    dashboardState?.setState(() {
-      dashboardState._selectedIndex = 1;
-    });
+    setState(() => _selectedIndex = 1);
   }
 
   void _switchToSchedule(BuildContext context) {
-    final dashboardState = context.findAncestorStateOfType<_DashboardScreenState>();
-    dashboardState?.setState(() {
-      dashboardState._selectedIndex = 2;
-    });
+    setState(() => _selectedIndex = 2);
   }
 
   void _switchToMap(BuildContext context) {
-    final dashboardState = context.findAncestorStateOfType<_DashboardScreenState>();
-    dashboardState?.setState(() {
-      dashboardState._selectedIndex = 3;
-    });
+    setState(() => _selectedIndex = 3);
   }
 }
 
