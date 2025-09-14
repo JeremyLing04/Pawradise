@@ -34,7 +34,7 @@ class User {
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       avatarUrl: data['avatarUrl'], // 从Firestore读取头像URL
       bio: data['bio'] ?? '', // 从Firestore读取bio
-      searchKeywords: data['searchKeywords'] ?? [],
+      searchKeywords: List<String>.from(data['searchKeywords'] ?? []),
     );
   }
 

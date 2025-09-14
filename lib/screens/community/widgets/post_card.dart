@@ -2,17 +2,29 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:like_button/like_button.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pawradise/screens/community/widgets/like_button_widget.dart';
-import '../../../models/post_model.dart'; // 导入模型
+import 'package:pawradise/services/community_service.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import '../../../models/post_model.dart';
 
 class PostCard extends StatelessWidget {
   final PostModel post;
   final VoidCallback onTap;
+  final String? eventId; // 新增：事件ID
 
-  const PostCard({super.key, required this.post, required this.onTap});
+  const PostCard({
+    super.key, 
+    required this.post, 
+    required this.onTap,
+    this.eventId, // 新增：可选的事件ID
+  });
 
   @override
   Widget build(BuildContext context) {
+    final CommunityService communityService = CommunityService();
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
@@ -47,13 +59,24 @@ class PostCard extends StatelessWidget {
                   
                   const SizedBox(height: 8),
                   
-                  // 帖子内容预览
-                  Text(
-                    post.content,
-                    maxLines: post.hasImage ? 2 : 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 14, color: Colors.black87),
-                  ),
+                  // 帖子内容预览 - 如果是事件类型使用 Markdown
+                  post.type == 'event'
+                      ? MarkdownBody(
+                          data: post.content,
+                          softLineBreak: true,
+                          styleSheet: MarkdownStyleSheet(
+                            p: const TextStyle(fontSize: 14, color: Colors.black87),
+                            strong: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          shrinkWrap: true,
+                        )
+                      : Text(
+                          post.content,
+                          maxLines: post.hasImage ? 2 : 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 14, color: Colors.black87),
+                        ),
+                  
                   const SizedBox(height: 12),
                   
                   // 作者和时间信息
@@ -84,33 +107,107 @@ class PostCard extends StatelessWidget {
                     ],
                   ),
                   
-                  // 互动统计
+                  // 互动统计和活动按钮
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      LikeButtonWidget(
-                        postId: post.id!,
-                        initialLikes: post.likes,
-                      ),
-                      Text(
-                        '${post.likes}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                      const SizedBox(width: 16),
-                      Icon(Icons.comment, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${post.comments}',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
-                    ],
-                  ),
+                  _buildBottomSection(context, communityService, currentUserId),
                 ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  // 构建底部区域（点赞、评论、活动按钮）
+  Widget _buildBottomSection(BuildContext context, CommunityService communityService, String? currentUserId) {
+    return Row(
+      children: [
+        // 左侧：点赞和评论
+        Expanded(
+          child: Row(
+            children: [
+              LikeButtonWidget(
+                postId: post.id!,
+                initialLikes: post.likes,
+              ),
+              Text(
+                '${post.likes}',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+              const SizedBox(width: 16),
+              Icon(Icons.comment, size: 16, color: Colors.grey[600]),
+              const SizedBox(width: 4),
+              Text(
+                '${post.comments}',
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+        
+        // 右侧：活动加入按钮（如果是事件类型）
+        if (post.type == 'event' && eventId != null)
+          _buildEventJoinButton(context, communityService, currentUserId),
+      ],
+    );
+  }
+
+  // 在 _buildEventJoinButton 方法中修改：
+  Widget _buildEventJoinButton(BuildContext context, CommunityService communityService, String? currentUserId) {
+    return FutureBuilder<bool>(
+      future: communityService.isUserJoined(eventId!),
+      builder: (context, joinSnapshot) {
+        final isJoined = joinSnapshot.data ?? false;
+        
+        return FutureBuilder<int>(
+          future: communityService.getParticipantCount(eventId!),
+          builder: (context, countSnapshot) {
+            final participantCount = countSnapshot.data ?? 0;
+
+            return Container(
+              margin: const EdgeInsets.only(left: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      communityService.joinEvent(post.id!, eventId!);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(isJoined ? 'Left ${post.title}' : 'Joined ${post.title}')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isJoined ? Colors.grey : Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      minimumSize: const Size(0, 32),
+                    ),
+                    child: Text(
+                      isJoined ? 'Joined' : 'Join',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (participantCount > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        '$participantCount joined',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -172,6 +269,14 @@ class PostCard extends StatelessWidget {
 
   String _formatTimestamp(Timestamp timestamp) {
     final date = timestamp.toDate();
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inMinutes < 1) return 'Just now';
+    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
+    if (difference.inHours < 24) return '${difference.inHours}h ago';
+    if (difference.inDays < 7) return '${difference.inDays}d ago';
+
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 }

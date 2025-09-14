@@ -1,11 +1,13 @@
 // screens/profile/add_edit_pet_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/rendering.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart'; 
 import '../../constants.dart';
 import '../../models/pet_model.dart';
 import '../../services/pet_service.dart';
+import '../../services/ai_service.dart';
 
 class AddEditPetScreen extends StatefulWidget {
   final Pet? pet;
@@ -28,7 +30,9 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
   
   File? _selectedImage;
   bool _isLoading = false;
+  bool _isIdentifyingBreed = false;
   String? _userId;
+  String? _aiSuggestedBreed;
 
   @override
   void initState() {
@@ -57,9 +61,152 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
     if (pickedFile != null) {
       setState(() {
         _selectedImage = File(pickedFile.path);
+        _isIdentifyingBreed = true;
       });
     }
+
+    try{
+      final suggestedBreed = await AIService.identifyDogBreed(_selectedImage!);
+
+      if(mounted){
+        setState(() {
+          _aiSuggestedBreed = suggestedBreed;
+          _isIdentifyingBreed = false;
+        });
+
+        if (suggestedBreed != null && suggestedBreed != 'Unknown'){
+          _showBreedConfirmationDialog(suggestedBreed);
+        }
+      }
+    }catch(e){
+      if(mounted){
+        setState(() {
+          _isIdentifyingBreed = false;
+        });
+        _showErrorSnackBar('Breed identification failed: $e');
+      }
+    }
   }
+
+  // 显示品种确认对话框
+  void _showBreedConfirmationDialog(String suggestedBreed) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('AI detection result', style: TextStyle(fontSize: 15),),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              suggestedBreed,
+              style: TextStyle(
+                fontSize: 25,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Is it correct breed of your pet?',
+              style: TextStyle(fontSize: 15),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showBreedCorrectionDialog(suggestedBreed);
+            },
+            child: Text('No'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _breedController.text = suggestedBreed;
+              });
+              Navigator.pop(context);
+            },
+            child: Text('Yes'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 显示品种修正对话框
+  void _showBreedCorrectionDialog(String suggestedBreed) {
+    final correctionController = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Please enter your pet\'s breed'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(suggestedBreed),
+            SizedBox(height: 8),
+            Text('不是这个品种吗？请输入正确的品种：'),
+            SizedBox(height: 16),
+            TextFormField(
+              controller: correctionController,
+              decoration: InputDecoration(
+                labelText: '正确品种',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('取消'),
+          ),
+          TextButton(
+            onPressed: () {
+              if (correctionController.text.isNotEmpty) {
+                setState(() {
+                  _breedController.text = correctionController.text;
+                });
+              }
+              Navigator.pop(context);
+            },
+            child: Text('确定'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 构建品种字段（添加AI识别功能）
+  Widget _buildBreedField() {
+    return Stack(
+      children: [
+        _buildTextField('Breed', Icons.emoji_nature, _breedController, 
+            validator: _validateRequired),
+        if (_isIdentifyingBreed)
+          Positioned(
+            right: 8,
+            top: 8,
+            child: Container(
+              padding: EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.8),
+                shape: BoxShape.circle,
+              ),
+              child: SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
 
   void _showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -256,8 +403,7 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
                                       children: [
                                         Expanded(
                                           flex: 2,
-                                          child: _buildTextField('Breed', Icons.emoji_nature, _breedController, 
-                                              validator: _validateRequired),
+                                          child: _buildBreedField(), // 替换原来的 _buildTextField
                                         ),
                                         SizedBox(width: 16),
                                         Expanded(

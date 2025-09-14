@@ -34,15 +34,18 @@ class CommunityService {
       );
 
       // 保存到社区
-      await _firestore.collection('posts').add(post.toMap());
-
-      // 更新事件的分享状态
+      final postRef = await _firestore.collection('posts').add(post.toMap());
+      
+      // 更新事件的分享状态并记录帖子ID
       await _firestore
           .collection('users')
           .doc(event.userId)
           .collection('events')
           .doc(event.id)
-          .update({'sharedToCommunity': true});
+          .update({
+            'sharedToCommunity': true,
+            'communityPostId': postRef.id, // 保存社区帖子ID
+          });
     } catch (e) {
       debugPrint('Error sharing event to community: $e');
     }
@@ -91,25 +94,65 @@ $joinText
 ''';
   }
 
+  // 加入活动
   Future<void> joinEvent(String postId, String eventId) async {
     try {
       final user = _auth.currentUser;
       if (user == null) return;
 
-      // 添加到参与列表
-      await _firestore.collection('event_participants').add({
-        'postId': postId,
-        'eventId': eventId,
-        'userId': user.uid,
-        'joinedAt': Timestamp.now(),
-      });
+      // 检查是否已经加入
+      final existingJoin = await _firestore
+          .collection('event_participants')
+          .where('postId', isEqualTo: postId)
+          .where('userId', isEqualTo: user.uid)
+          .get();
 
-      // 更新参与计数
-      await _firestore.collection('posts').doc(postId).update({
-        'participants': FieldValue.increment(1),
-      });
+      if (existingJoin.docs.isNotEmpty) {
+        // 如果已经加入，则取消加入
+        await _firestore
+            .collection('event_participants')
+            .doc(existingJoin.docs.first.id)
+            .delete();
+
+        // 更新参与计数
+        await _firestore.collection('posts').doc(postId).update({
+          'participants': FieldValue.increment(-1),
+        });
+      } else {
+        // 添加到参与列表
+        await _firestore.collection('event_participants').add({
+          'postId': postId,
+          'eventId': eventId,
+          'userId': user.uid,
+          'joinedAt': Timestamp.now(),
+        });
+
+        // 更新参与计数
+        await _firestore.collection('posts').doc(postId).update({
+          'participants': FieldValue.increment(1),
+        });
+      }
     } catch (e) {
-      debugPrint('Error joining event: $e');
+      debugPrint('Error joining/unjoining event: $e');
+    }
+  }
+
+  // 检查用户是否已加入活动
+  Future<bool> isUserJoined(String postId) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
+
+      final snapshot = await _firestore
+          .collection('event_participants')
+          .where('postId', isEqualTo: postId)
+          .where('userId', isEqualTo: user.uid)
+          .get();
+
+      return snapshot.docs.isNotEmpty;
+    } catch (e) {
+      debugPrint('Error checking join status: $e');
+      return false;
     }
   }
 
