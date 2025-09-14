@@ -59,6 +59,7 @@ dependencies:
   google_generative_ai: ^0.4.7
   flutter_dotenv: ^6.0.0
   flutter_markdown: ^0.7.7+1
+  lottie: ^2.0.0
 
 dev_dependencies:
   flutter_test:
@@ -79,10 +80,18 @@ flutter:
   assets:
     - assets/images/login sign up background.jpg
     - .env
+    - assets/images/Splash_Screen.json
+    - assets/images/Splash_Screen_Background.json
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  fonts:
+    - family: Chocolate Covered Raindrops
+      fonts:
+        - asset: assets/fonts/Chocolate Covered Raindrops.ttf
+
 
   # To add assets to your application, add an assets section, like this:
   # assets:

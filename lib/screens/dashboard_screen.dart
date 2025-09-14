@@ -58,7 +58,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         BottomNavigationBarItem(icon: Icon(Icons.pets), label: 'Pets'), // 修改图标和标签
       ],
       currentIndex: _selectedIndex,
-      selectedItemColor: AppColors.primary,
+      selectedItemColor: const Color.fromRGBO(239, 197, 77, 1),
       unselectedItemColor: AppColors.textSecondary,
       onTap: _onItemTapped,
       type: BottomNavigationBarType.fixed,

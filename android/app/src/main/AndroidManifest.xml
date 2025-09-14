@@ -49,13 +49,12 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyCfOOzVBxw-p_v69VjTeFrg7nVp3OJPaG8"/>  
-
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver" />
         <receiver
             android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
     </application>
-    
+
 
     <queries>
         <intent>

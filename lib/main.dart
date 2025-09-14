@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+
 import 'package:provider/provider.dart';
 import 'screens/schedule/schedule_screen.dart';
 import 'providers/event_provider.dart';
 import 'constants.dart';
 // import 'package:firebase_core/firebase_core.dart';
 // import 'firebase_options.dart';
-
 import 'constants.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -26,6 +26,8 @@ import 'screens/profile/add_edit_pet_screen.dart';
 
 // chat
 import 'screens/chat/ai_chat_screen.dart';
+// splash screen import
+import 'screens/splash_screen.dart'; // Import the SplashScreen
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,8 +49,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Pawradise',
       theme: AppTheme.lightTheme,
-      initialRoute: '/dashboard',
+      initialRoute: '/splash',
+      // initialRoute: '/dashboard',
       routes: {
+        '/splash': (context) => SplashScreen(),
         '/': (context) => const Login(),
         '/register': (context) => const Register(),
         '/dashboard': (context) => const _ScreenWithChatButton(child: DashboardScreen()),
