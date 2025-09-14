@@ -1,16 +1,212 @@
 // services/ai_service.dart (Complete English version)
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/chat_message_model.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 
 class AIService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   bool _hasInitializedWelcomeMessage = false;
+
+  // 狗品种识别功能
+  static Future<String?> identifyDogBreed(File imageFile) async {
+    try {
+      final apiKey = dotenv.env['GEMINI_API_KEY'];
+      if (apiKey == null || apiKey.isEmpty) {
+        throw Exception('Gemini API key not found');
+      }
+
+      final model = GenerativeModel(
+        model: 'models/gemini-2.0-flash',
+        apiKey: apiKey,
+      );
+
+      final prompt = '''
+Analyze this dog image and identify the breed. 
+Return ONLY the most likely breed name in English, nothing else.
+If it's not a dog or unclear, return "Unknown".
+Format: Just the breed name
+Example: "Golden Retriever"
+''';
+
+      final imageBytes = await imageFile.readAsBytes();
+      final content = [
+        Content.multi([
+          TextPart(prompt),
+          DataPart('image/jpeg', imageBytes),
+        ])
+      ];
+
+      final response = await model.generateContent(content);
+      final breed = response.text?.trim();
+      
+      // 清理响应，只返回品种名称
+      if (breed != null && breed.isNotEmpty) {
+        // 移除可能的引号或其他符号
+        final cleanedBreed = breed
+            .replaceAll('"', '')
+            .replaceAll("'", '')
+            .replaceAll('.', '')
+            .trim();
+        
+        // 检查是否是有效的品种名称（不是错误消息）
+        if (cleanedBreed.length > 2 && 
+            !cleanedBreed.toLowerCase().contains('sorry') &&
+            !cleanedBreed.toLowerCase().contains('error') &&
+            !cleanedBreed.toLowerCase().contains('cannot')) {
+          return cleanedBreed;
+        }
+      }
+      
+      return 'Unknown';
+    } catch (e) {
+      print('AI breed identification error: $e');
+      return null;
+    }
+  }
+
+  // 备选狗品种识别方法（使用文本API）
+  static Future<String?> identifyDogBreedAlternative(File imageFile) async {
+    try {
+      final apiKey = dotenv.env['GEMINI_API_KEY'];
+      if (apiKey == null || apiKey.isEmpty) {
+        throw Exception('Gemini API key not found');
+      }
+
+      // 将图像转换为base64
+      final imageBytes = await imageFile.readAsBytes();
+      final base64Image = base64Encode(imageBytes);
+
+      const String modelName = 'models/gemini-2.0-flash';
+      const String apiUrl = 'https://generativelanguage.googleapis.com/v1/$modelName:generateContent';
+
+      final headers = {
+        'Content-Type': 'application/json',
+      };
+
+      final Map<String, dynamic> requestBody = {
+        "contents": [
+          {
+            "parts": [
+              {
+                "text": '''Analyze this dog image and identify the breed. 
+Return ONLY the most likely breed name in English, nothing else.
+If it's not a dog or unclear, return "Unknown".
+Format: Just the breed name
+Example: "Golden Retriever"'''
+              },
+              {
+                "inline_data": {
+                  "mime_type": "image/jpeg",
+                  "data": base64Image
+                }
+              }
+            ]
+          }
+        ],
+        "generationConfig": {
+          "temperature": 0.1,
+          "maxOutputTokens": 20,
+          "topP": 0.8,
+          "topK": 40
+        }
+      };
+
+      final response = await http.post(
+        Uri.parse('$apiUrl?key=$apiKey'),
+        headers: headers,
+        body: json.encode(requestBody),
+      ).timeout(Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        
+        if (responseData['candidates'] != null &&
+            responseData['candidates'].isNotEmpty &&
+            responseData['candidates'][0]['content'] != null &&
+            responseData['candidates'][0]['content']['parts'] != null &&
+            responseData['candidates'][0]['content']['parts'].isNotEmpty) {
+          
+          final String breed = responseData['candidates'][0]['content']['parts'][0]['text'].trim();
+          return breed;
+        }
+      }
+      
+      return 'Unknown';
+    } catch (e) {
+      print('Alternative breed identification error: $e');
+      return null;
+    }
+  }
+
+  // 获取狗品种详细信息
+  static Future<String> getBreedInformation(String breedName) async {
+    try {
+      final apiKey = dotenv.env['GEMINI_API_KEY'];
+      if (apiKey == null || apiKey.isEmpty) {
+        return 'Breed information not available.';
+      }
+
+      final model = GenerativeModel(
+        model: 'gemini-2.0-flash',
+        apiKey: apiKey,
+      );
+
+      final prompt = '''
+Provide brief information about $breedName dog breed in English.
+Include:
+- Key characteristics
+- Typical temperament
+- Exercise needs
+- Grooming requirements
+- Common health considerations
+
+Keep it concise (under 100 words).
+Format as bullet points.
+''';
+
+      final response = await model.generateContent([Content.text(prompt)]);
+      return response.text ?? 'Information not available for $breedName.';
+    } catch (e) {
+      print('Breed information error: $e');
+      return 'Could not retrieve breed information.';
+    }
+  }
+
+  // 验证品种名称是否合理
+  static bool isValidBreedName(String breedName) {
+    if (breedName.isEmpty || breedName == 'Unknown') {
+      return false;
+    }
+
+    // 常见无效响应
+    final invalidResponses = [
+      'sorry', 'error', 'cannot', 'unable', 'not sure', 
+      'not a dog', 'not clear', 'unsure', 'maybe'
+    ];
+
+    final lowerBreed = breedName.toLowerCase();
+    for (final invalid in invalidResponses) {
+      if (lowerBreed.contains(invalid)) {
+        return false;
+      }
+    }
+
+    // 检查长度和格式
+    return breedName.length >= 3 && 
+           breedName.length <= 50 &&
+           !breedName.contains('\n') &&
+           !breedName.contains('  ') &&
+           RegExp(r'^[a-zA-Z\s\-]+$').hasMatch(breedName);
+  }
+
+  // ... 以下保持原有的聊天功能不变 ...
 
   // 添加初始化欢迎消息的方法
   Future<void> initializeWelcomeMessage() async {

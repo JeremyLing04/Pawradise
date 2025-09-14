@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pawradise/screens/community/widgets/like_button_widget.dart';
 import 'package:pawradise/screens/community/widgets/comment_like_button.dart';
+import 'package:pawradise/services/community_service.dart';
 import 'package:pawradise/services/friends_service.dart';
 import '../../models/post_model.dart';
 import '../../models/comment_model.dart';
@@ -326,6 +327,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                                     backgroundColor: post.isResolved ? Colors.green : Colors.red,
                                     padding: const EdgeInsets.symmetric(horizontal: 8),
                                   ),
+
+                                if (post.type == 'event')
+                                  Container(
+                                    margin: const EdgeInsets.only(left: 20),
+                                    child: _buildEventJoinButton(post),
+                                  ),
                               ],
                             ),
                             const SizedBox(height: 20),
@@ -384,6 +391,63 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           );
         },
       ),
+    );
+  }
+
+  // 构建事件加入按钮
+  Widget _buildEventJoinButton(PostModel post) {
+    final CommunityService communityService = CommunityService();
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+    return FutureBuilder<bool>(
+      future: communityService.isUserJoined(widget.postId),
+      builder: (context, joinSnapshot) {
+        final isJoined = joinSnapshot.data ?? false;
+        
+        return FutureBuilder<int>(
+          future: communityService.getParticipantCount(widget.postId),
+          builder: (context, countSnapshot) {
+            final participantCount = countSnapshot.data ?? 0;
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    communityService.joinEvent(widget.postId, widget.postId);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(isJoined ? 'Left ${post.title}' : 'Joined ${post.title}')),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isJoined ? Colors.grey : Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  ),
+                  child: Text(
+                    isJoined ? 'Joined' : 'Join',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+                if (participantCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      '$participantCount ${participantCount == 1 ? 'person' : 'people'} joined',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
