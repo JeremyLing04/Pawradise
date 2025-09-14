@@ -17,7 +17,9 @@ class RemindersView extends StatelessWidget {
       body: Consumer<EventProvider>(
         builder: (context, eventProvider, child) {
           final upcomingEvents = eventProvider.events
-              .where((event) => event.scheduledTime.isAfter(DateTime.now()))
+              .where((event) =>
+                  !event.isCompleted && // 只显示未完成的事件
+                  event.scheduledTime.isAfter(DateTime.now()))
               .toList();
 
           if (upcomingEvents.isEmpty) {

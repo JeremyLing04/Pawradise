@@ -29,17 +29,19 @@ class EventProvider with ChangeNotifier {
   Future<void> addEvent(Event event, {bool shareToCommunity = false}) async {
     await _firestoreService.addEvent(event);
 
-    final notificationTime = event.scheduledTime.subtract(
-      Duration(minutes: event.notificationMinutes),
-    );
+    // 只有在事件未完成时才安排通知
+    if (!event.isCompleted) {
+      final notificationTime = event.scheduledTime.subtract(
+        Duration(minutes: event.notificationMinutes),
+      );
 
-    await _notificationService.scheduleNotification(
-      id: event.id.hashCode,
-      title: 'Reminder: ${event.title}',
-      body: event.description ?? 'Time for ${event.type.displayName}',
-      scheduledTime: notificationTime,
-    );
-
+      await _notificationService.scheduleNotification(
+        id: event.id.hashCode,
+        title: 'Reminder: ${event.title}',
+        body: event.description ?? 'Time for ${event.type.displayName}',
+        scheduledTime: notificationTime,
+      );
+    }
     // 分享到社区
     if (shareToCommunity) {
       await _communityService.shareEventToCommunity(event);
@@ -54,16 +56,19 @@ class EventProvider with ChangeNotifier {
 
     await _notificationService.cancelNotification(event.id.hashCode);
 
-    final notificationTime = event.scheduledTime.subtract(
-      Duration(minutes: event.notificationMinutes),
-    );
+    // 只有在事件未完成时才重新安排通知
+    if (!event.isCompleted) {
+      final notificationTime = event.scheduledTime.subtract(
+        Duration(minutes: event.notificationMinutes),
+      );
 
-    await _notificationService.scheduleNotification(
-      id: event.id.hashCode,
-      title: 'Reminder: ${event.title}',
-      body: event.description ?? 'Time for ${event.type.displayName}',
-      scheduledTime: notificationTime,
-    );
+      await _notificationService.scheduleNotification(
+        id: event.id.hashCode,
+        title: 'Reminder: ${event.title}',
+        body: event.description ?? 'Time for ${event.type.displayName}',
+        scheduledTime: notificationTime,
+      );
+    }
 
     final index = _events.indexWhere((e) => e.id == event.id);
     if (index != -1) {
@@ -82,10 +87,12 @@ class EventProvider with ChangeNotifier {
 
   Future<List<Event>> getEventsByDate(DateTime date) async {
     return _events
-        .where((event) =>
-            event.scheduledTime.year == date.year &&
-            event.scheduledTime.month == date.month &&
-            event.scheduledTime.day == date.day)
+        .where(
+          (event) =>
+              event.scheduledTime.year == date.year &&
+              event.scheduledTime.month == date.month &&
+              event.scheduledTime.day == date.day,
+        )
         .toList();
   }
 
