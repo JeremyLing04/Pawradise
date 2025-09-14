@@ -4,12 +4,8 @@ import 'package:provider/provider.dart';
 import 'screens/schedule/schedule_screen.dart';
 import 'providers/event_provider.dart';
 import 'constants.dart';
-// import 'package:firebase_core/firebase_core.dart';
-// import 'firebase_options.dart';
-import 'constants.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'constants.dart';
 import 'firebase_options.dart';
 import 'screens/dashboard_screen.dart';
 
@@ -46,21 +42,26 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Pawradise',
-      theme: AppTheme.lightTheme,
-      initialRoute: '/splash',
-      // initialRoute: '/dashboard',
-      routes: {
-        '/splash': (context) => SplashScreen(),
-        '/': (context) => const Login(),
-        '/register': (context) => const Register(),
-        '/dashboard': (context) => const _ScreenWithChatButton(child: DashboardScreen()),
-        '/pets': (context) => const _ScreenWithChatButton(child: PetListScreen()),
-        '/pets/add': (context) => const AddEditPetScreen(),
-        '/chat': (context) => const AIChatScreen(),
-      },
-      debugShowCheckedModeBanner: false,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => EventProvider()),
+        // 可以添加其他 providers
+      ],
+      child: MaterialApp(
+        title: 'Pawradise',
+        theme: AppTheme.lightTheme,
+        initialRoute: '/splash',
+        routes: {
+          '/splash': (context) => SplashScreen(),
+          '/': (context) => Login(),
+          '/register': (context) => Register(),
+          '/dashboard': (context) => DashboardScreen(),
+          '/pets': (context) => PetListScreen(),
+          '/pets/add': (context) => AddEditPetScreen(),
+          '/chat': (context) => AIChatScreen(),
+        },
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }

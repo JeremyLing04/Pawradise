@@ -1,87 +1,48 @@
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/event_model.dart';
 
-class DatabaseService {
-  static final DatabaseService _instance = DatabaseService._internal();
-  factory DatabaseService() => _instance;
-  DatabaseService._internal();
+class FirestoreService {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  static Database? _database;
-
-  Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDatabase();
-    return _database!;
+  Future<void> addEvent(Event event) async {
+    await _db
+        .collection('users')
+        .doc(event.userId)
+        .collection('events')
+        .doc(event.id)
+        .set(event.toMap());
   }
 
-  Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'pawradise.db');
-    return await openDatabase(path, version: 1, onCreate: _onCreate);
+  Future<void> updateEvent(Event event) async {
+    await _db
+        .collection('users')
+        .doc(event.userId)
+        .collection('events')
+        .doc(event.id)
+        .update(event.toMap());
   }
 
-  Future<void> _onCreate(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE events(
-        id TEXT PRIMARY KEY,
-        userId TEXT NOT NULL,
-        petId TEXT NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT,
-        type TEXT NOT NULL,
-        scheduledTime INTEGER NOT NULL,
-        isCompleted INTEGER NOT NULL,
-        createdAt INTEGER NOT NULL,
-        notificationMinutes INTEGER DEFAULT 30
-      )
-    ''');
+  Future<void> deleteEvent(String userId, String eventId) async {
+    await _db
+        .collection('users')
+        .doc(userId)
+        .collection('events')
+        .doc(eventId)
+        .delete();
   }
 
-  Future<int> insertEvent(Map<String, dynamic> event) async {
-    final db = await database;
-    return await db.insert('events', event);
-  }
+  Future<List<Event>> getEvents(String userId) async {
+    final snapshot = await _db
+        .collection('users')
+        .doc(userId)
+        .collection('events')
+        .orderBy('scheduledTime')
+        .get();
 
-  Future<List<Map<String, dynamic>>> getEvents() async {
-    final db = await database;
-    return await db.query('events', orderBy: 'scheduledTime ASC');
-  }
-
-  Future<List<Map<String, dynamic>>> getEventsByDate(DateTime date) async {
-    final db = await database;
-    final start = DateTime(
-      date.year,
-      date.month,
-      date.day,
-    ).millisecondsSinceEpoch;
-    final end = DateTime(
-      date.year,
-      date.month,
-      date.day,
-      23,
-      59,
-      59,
-    ).millisecondsSinceEpoch;
-
-    return await db.query(
-      'events',
-      where: 'scheduledTime BETWEEN ? AND ?',
-      whereArgs: [start, end],
-      orderBy: 'scheduledTime ASC',
-    );
-  }
-
-  Future<int> updateEvent(Map<String, dynamic> event) async {
-    final db = await database;
-    return await db.update(
-      'events',
-      event,
-      where: 'id = ?',
-      whereArgs: [event['id']],
-    );
-  }
-
-  Future<int> deleteEvent(String id) async {
-    final db = await database;
-    return await db.delete('events', where: 'id = ?', whereArgs: [id]);
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      data['id'] = doc.id; // 确保 event.id 正确
+      return Event.fromMap(data);
+    }).toList();
   }
 }

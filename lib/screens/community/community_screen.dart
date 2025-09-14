@@ -8,6 +8,8 @@ import 'widgets/post_card.dart';
 import '../../models/post_model.dart';
 import 'friends_screen.dart';
 import 'chat_list_screen.dart';
+//sb add:
+import 'widgets/event_post_card.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -273,16 +275,31 @@ class _CommunityScreenState extends State<CommunityScreen> {
       itemBuilder: (context, index) {
         final doc = snapshot.data!.docs[index];
         final post = PostModel.fromFireStore(doc);
-        
-        return PostCard(
-          post: post, 
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PostDetailScreen(postId: doc.id),
+
+        //sb: start add here
+        // 根据帖子类型显示不同的卡片
+        if (post.type == 'event') {
+          return EventPostCard(
+            post: post,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PostDetailScreen(postId: doc.id),
+              ),
             ),
-          ),
-        );
+            eventId: doc.id, // 使用帖子ID作为事件ID
+          );
+        } else {
+          return PostCard(
+            post: post, 
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PostDetailScreen(postId: doc.id),
+              ),
+            ),
+          );
+        }
       },
     );
   }

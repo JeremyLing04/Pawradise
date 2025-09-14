@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../providers/event_provider.dart';
 import '../../services/notification_service.dart';
 import 'calendar_screen.dart';
-import 'reminders_screen.dart';
+import '../../constants.dart';
+import 'add_event.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
 class ScheduleScreen extends StatefulWidget {
@@ -14,8 +16,7 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  int _currentIndex = 0;
-  final List<Widget> _tabs = [const CalendarView(), const RemindersView()];
+  DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
@@ -26,28 +27,38 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     NotificationService().initialize();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<EventProvider>(context, listen: false).loadEvents();
+    final userId = FirebaseAuth.instance.currentUser!.uid;
+    final eventProvider = Provider.of<EventProvider>(context, listen: false);
+    eventProvider.initialize(userId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _tabs[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Schedule',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Reminders',
-          ),
-        ],
+      body: CalendarView(
+        onDateSelected: (date) {
+          setState(() {
+            _selectedDate = date; // 更新选中的日期
+          });
+        },
+      ), // 只显示日历视图
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showAddEventDialog(context),
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.accent,
+        child: const Icon(Icons.add),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  void _showAddEventDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AddEventDialog(selectedDate: _selectedDate);
+      },
     );
   }
 }

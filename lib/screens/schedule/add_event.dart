@@ -1,7 +1,7 @@
-// screens/add_event_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/event_model.dart';
 import '../../providers/event_provider.dart';
 import '../../constants.dart';
@@ -22,8 +22,9 @@ class _AddEventDialogState extends State<AddEventDialog> {
   DateTime _selectedTime = DateTime.now();
   EventType _selectedType = EventType.other;
   int _notificationMinutes = 30;
+  bool _shareToCommunity = false;
 
-//initialize
+  //initialize
   @override
   void initState() {
     super.initState();
@@ -113,6 +114,18 @@ class _AddEventDialogState extends State<AddEventDialog> {
                   );
                 },
               ),
+
+              // 分享到社区选项
+              SwitchListTile(
+                title: const Text('Share to Community'),
+                subtitle: const Text('Other pet owners can join your activity'),
+                value: _shareToCommunity,
+                onChanged: (value) {
+                  setState(() {
+                    _shareToCommunity = value;
+                  });
+                },
+              ),
             ],
           ),
         ),
@@ -150,12 +163,14 @@ class _AddEventDialogState extends State<AddEventDialog> {
     }
   }
 
-  //save event
+  // save event
   void _saveEvent(BuildContext context) {
     if (_formKey.currentState!.validate()) {
+      final userId = FirebaseAuth.instance.currentUser!.uid;
+
       final event = Event(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: 'current_user_id',
+        userId: userId,
         petId: 'default_pet_id',
         title: _titleController.text,
         description: _descriptionController.text.isEmpty
@@ -166,11 +181,16 @@ class _AddEventDialogState extends State<AddEventDialog> {
         isCompleted: false,
         createdAt: DateTime.now(),
         notificationMinutes: _notificationMinutes,
+        sharedToCommunity: _shareToCommunity,
       );
 
-      //add event
-      Provider.of<EventProvider>(context, listen: false).addEvent(event);
-      //close
+      // add event 到 Firestore
+      Provider.of<EventProvider>(
+        context,
+        listen: false,
+      ).addEvent(event, shareToCommunity: _shareToCommunity);
+
+      // close dialog
       Navigator.pop(context);
     }
   }

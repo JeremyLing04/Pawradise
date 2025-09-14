@@ -1,4 +1,3 @@
-// screens/calendar_screen.dart
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
@@ -8,10 +7,11 @@ import 'package:provider/provider.dart';
 import '../../constants.dart';
 import 'edit_event.dart';
 import 'delete_event.dart';
-import 'add_event.dart';
+import 'reminders_screen.dart';
 
 class CalendarView extends StatefulWidget {
-  const CalendarView({super.key});
+  final Function(DateTime)? onDateSelected;
+  const CalendarView({super.key, this.onDateSelected});
 
   @override
   State<CalendarView> createState() => _CalendarViewState();
@@ -29,8 +29,9 @@ class _CalendarViewState extends State<CalendarView> {
         title: const Text('Pet Schedule'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () => _showAddEventDialog(context),
+            icon: const Icon(Icons.notifications),
+            onPressed: () => _showRemindersView(context),
+            tooltip: 'View Reminders',
           ),
         ],
       ),
@@ -47,8 +48,11 @@ class _CalendarViewState extends State<CalendarView> {
                 _selectedDay = selectedDay;
                 _focusedDay = focusedDay;
               });
+              // 通知父组件日期选择变化
+              if (widget.onDateSelected != null) {
+                widget.onDateSelected!(selectedDay);
+              }
             },
-            //switch month/week
             onFormatChanged: (format) {
               setState(() {
                 _calendarFormat = format;
@@ -66,7 +70,14 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
-  //event specific day
+  // 显示提醒视图
+  void _showRemindersView(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const RemindersView()),
+    );
+  }
+
   List<Event> _getEventsForDay(DateTime day, BuildContext context) {
     final eventProvider = Provider.of<EventProvider>(context, listen: false);
     return eventProvider.events
@@ -105,12 +116,12 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
-  //single event card in the list
   Widget _buildEventItem(Event event, BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      color: AppColors.secondary,
       child: ListTile(
-        leading: Icon(event.type.icon, color: AppColors.primary),
+        leading: Icon(event.type.icon, color: AppColors.accent),
         title: Text(event.title),
         subtitle: Text(DateFormat('hh:mm a').format(event.scheduledTime)),
         trailing: Checkbox(
@@ -122,7 +133,6 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
-  //mark completed/incomplete
   void _toggleEventCompletion(
     Event event,
     bool completed,
@@ -138,6 +148,7 @@ class _CalendarViewState extends State<CalendarView> {
       scheduledTime: event.scheduledTime,
       isCompleted: completed,
       createdAt: event.createdAt,
+      notificationMinutes: event.notificationMinutes,
     );
 
     Provider.of<EventProvider>(
@@ -203,15 +214,6 @@ class _CalendarViewState extends State<CalendarView> {
       context: context,
       builder: (BuildContext context) {
         return DeleteEventDialog(event: event);
-      },
-    );
-  }
-
-  void _showAddEventDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AddEventDialog(selectedDate: _selectedDay ?? DateTime.now());
       },
     );
   }

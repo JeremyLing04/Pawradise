@@ -2,30 +2,31 @@ import 'package:flutter/foundation.dart';
 import '../models/event_model.dart';
 import '../services/database_service.dart';
 import '../services/notification_service.dart';
+import '../services/community_service.dart';
 
 class EventProvider with ChangeNotifier {
-  final DatabaseService _databaseService = DatabaseService();
+  final FirestoreService _firestoreService = FirestoreService();
   final NotificationService _notificationService = NotificationService();
+  final CommunityService _communityService = CommunityService();
 
   List<Event> _events = [];
   List<Event> get events => _events;
 
   static final List<int> notificationTimeOptions = [0, 5, 10, 15, 30, 60, 120];
 
-  // initial
-  Future<void> initialize() async {
+  // 初始化时加载 Firestore 数据
+  Future<void> initialize(String userId) async {
     await _notificationService.requestPermissions();
-    await loadEvents();
+    await loadEvents(userId);
   }
 
-  Future<void> loadEvents() async {
-    final eventsData = await _databaseService.getEvents();
-    _events = eventsData.map((data) => Event.fromMap(data)).toList();
+  Future<void> loadEvents(String userId) async {
+    _events = await _firestoreService.getEvents(userId);
     notifyListeners();
   }
 
-  Future<void> addEvent(Event event) async {
-    await _databaseService.insertEvent(event.toMap());
+  Future<void> addEvent(Event event, {bool shareToCommunity = false}) async {
+    await _firestoreService.addEvent(event);
 
     final notificationTime = event.scheduledTime.subtract(
       Duration(minutes: event.notificationMinutes),
@@ -38,12 +39,17 @@ class EventProvider with ChangeNotifier {
       scheduledTime: notificationTime,
     );
 
+    // 分享到社区
+    if (shareToCommunity) {
+      await _communityService.shareEventToCommunity(event);
+    }
+
     _events.add(event);
     notifyListeners();
   }
 
   Future<void> updateEvent(Event event) async {
-    await _databaseService.updateEvent(event.toMap());
+    await _firestoreService.updateEvent(event);
 
     await _notificationService.cancelNotification(event.id.hashCode);
 
@@ -65,8 +71,8 @@ class EventProvider with ChangeNotifier {
     }
   }
 
-  Future<void> deleteEvent(String id) async {
-    await _databaseService.deleteEvent(id);
+  Future<void> deleteEvent(String id, String userId) async {
+    await _firestoreService.deleteEvent(userId, id);
     await _notificationService.cancelNotification(id.hashCode);
 
     _events.removeWhere((event) => event.id == id);
@@ -74,8 +80,12 @@ class EventProvider with ChangeNotifier {
   }
 
   Future<List<Event>> getEventsByDate(DateTime date) async {
-    final eventsData = await _databaseService.getEventsByDate(date);
-    return eventsData.map((data) => Event.fromMap(data)).toList();
+    return _events
+        .where((event) =>
+            event.scheduledTime.year == date.year &&
+            event.scheduledTime.month == date.month &&
+            event.scheduledTime.day == date.day)
+        .toList();
   }
 
   Future<void> clearAllNotifications() async {

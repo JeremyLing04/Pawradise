@@ -1,7 +1,7 @@
-// screens/edit_event_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/event_model.dart';
 import '../../providers/event_provider.dart';
 import '../../constants.dart';
@@ -139,9 +139,11 @@ class _EditEventDialogState extends State<EditEventDialog> {
 
   void _updateEvent(BuildContext context) {
     if (_formKey.currentState!.validate()) {
+      final userId = FirebaseAuth.instance.currentUser!.uid;
+
       final updatedEvent = Event(
         id: widget.event.id,
-        userId: widget.event.userId,
+        userId: userId, // 保证使用当前用户 UID
         petId: widget.event.petId,
         title: _titleController.text,
         description: _descriptionController.text.isEmpty
@@ -158,6 +160,7 @@ class _EditEventDialogState extends State<EditEventDialog> {
         context,
         listen: false,
       ).updateEvent(updatedEvent);
+
       Navigator.pop(context);
     }
   }

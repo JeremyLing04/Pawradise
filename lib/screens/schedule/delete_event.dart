@@ -1,6 +1,6 @@
-// screens/delete_event_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/event_model.dart';
 import '../../providers/event_provider.dart';
 
@@ -21,10 +21,11 @@ class DeleteEventDialog extends StatelessWidget {
         ),
         TextButton(
           onPressed: () {
+            final userId = FirebaseAuth.instance.currentUser!.uid;
             Provider.of<EventProvider>(
               context,
               listen: false,
-            ).deleteEvent(event.id);
+            ).deleteEvent(event.id, userId); // 传 userId
             Navigator.pop(context);
           },
           child: const Text('Delete', style: TextStyle(color: Colors.red)),
