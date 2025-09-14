@@ -54,9 +54,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       case 1:
         return CommunityScreen();
       case 2:
-        return Placeholder();
+        return ScheduleScreen();
       case 3:
-        return Placeholder();
+        return MapScreen();
       case 4:
         return PetListScreen();
       default:
