@@ -1,4 +1,3 @@
-//screen/schedule/calender
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -42,8 +41,13 @@ class _CalendarViewState extends State<CalendarView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.accent.withOpacity(0.5),
       appBar: AppBar(
-        title: const Text('Pet Schedule'),
+        title: const Text('PawSchedule'),
+        centerTitle: true,
+        elevation: 4,
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.background,
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications),
@@ -51,43 +55,107 @@ class _CalendarViewState extends State<CalendarView> {
             tooltip: 'View Reminders',
           ),
         ],
-      ),
-      body: Column(
-        children: [
-          TableCalendar(
-            firstDay: DateTime.utc(2020, 1, 1),
-            lastDay: DateTime.utc(2030, 12, 31),
-            focusedDay: _focusedDay,
-            calendarFormat: _calendarFormat,
-            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDay = selectedDay;
-                _focusedDay = focusedDay;
-              });
-              // 通知父组件日期选择变化
-              if (widget.onDateSelected != null) {
-                widget.onDateSelected!(selectedDay);
-              }
-            },
-            onFormatChanged: (format) {
-              setState(() {
-                _calendarFormat = format;
-              });
-            },
-            onPageChanged: (focusedDay) {
-              _focusedDay = focusedDay;
-            },
-            eventLoader: (day) => _getEventsForDay(day, context),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(20),
           ),
-          const SizedBox(height: 8),
-          Expanded(child: _buildEventList()),
-        ],
+        ),
+      ),
+      body: Container(
+        margin: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.secondary,
+          borderRadius: BorderRadius.circular(50),
+          border: Border.all( 
+            color: AppColors.accent,
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+
+        //calendar
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: TableCalendar(
+                firstDay: DateTime.utc(2020, 1, 1),
+                lastDay: DateTime.utc(2030, 12, 31),
+                focusedDay: _focusedDay,
+                calendarFormat: _calendarFormat,
+                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                onDaySelected: (selectedDay, focusedDay) {
+                  setState(() {
+                    _selectedDay = selectedDay;
+                    _focusedDay = focusedDay;
+                  });
+                  if (widget.onDateSelected != null) {
+                    widget.onDateSelected!(selectedDay);
+                  }
+                },
+                onFormatChanged: (format) {
+                  setState(() {
+                    _calendarFormat = format;
+                  });
+                },
+                onPageChanged: (focusedDay) {
+                  _focusedDay = focusedDay;
+                },
+                eventLoader: (day) => _getEventsForDay(day, context),
+
+                calendarStyle: CalendarStyle(
+                  todayDecoration: BoxDecoration(
+                    color: AppColors.accent.withOpacity(0.7),
+                    shape: BoxShape.circle,
+                  ),
+                  selectedDecoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  markerDecoration: BoxDecoration(
+                    color: AppColors.accent.withOpacity(0.8),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                headerStyle: HeaderStyle(
+                  formatButtonVisible: false,
+                  titleCentered: true,
+                  titleTextStyle: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.accent,
+                  ),
+                ),
+              ),
+            ),
+
+            Divider(
+              thickness: 1,
+              height: 1,
+              color: AppColors.accent, 
+            ),
+
+            // list of events
+            Expanded(
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(20),
+                ),
+                child: _buildEventList(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // 显示提醒视图
   void _showRemindersView(BuildContext context) {
     Navigator.push(
       context,
@@ -104,7 +172,12 @@ class _CalendarViewState extends State<CalendarView> {
 
   Widget _buildEventList() {
     if (_selectedDay == null) {
-      return const Center(child: Text('Select a day to view events'));
+      return const Center(
+        child: Text(
+          'Select a day to view events',
+          style: TextStyle(color: Colors.grey),
+        ),
+      );
     }
 
     return Consumer<EventProvider>(
@@ -116,13 +189,14 @@ class _CalendarViewState extends State<CalendarView> {
         if (dayEvents.isEmpty) {
           return Center(
             child: Text(
-              'No events for ${DateFormat('MMM d, yyyy').format(_selectedDay!)}',
+              'Looks like ${DateFormat('MMM d, yyyy').format(_selectedDay!)} is free 🎉',
               style: const TextStyle(color: Colors.grey),
             ),
           );
         }
 
         return ListView.builder(
+          padding: const EdgeInsets.all(12),
           itemCount: dayEvents.length,
           itemBuilder: (context, index) {
             final event = dayEvents[index];
@@ -134,16 +208,51 @@ class _CalendarViewState extends State<CalendarView> {
   }
 
   Widget _buildEventItem(Event event, BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      color: AppColors.secondary,
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        color: AppColors.primary, 
+        border: Border.all( 
+          color: AppColors.accent, 
+          width: 2,
+      ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 8,
+            offset: Offset(2, 4),
+          ),
+        ],
+      ),
       child: ListTile(
-        leading: Icon(event.type.icon, color: AppColors.accent),
-        title: Text(event.title),
-        subtitle: Text(DateFormat('hh:mm a').format(event.scheduledTime)),
-        trailing: Checkbox(
-          value: event.isCompleted,
-          onChanged: (value) => _toggleEventCompletion(event, value!, context),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: CircleAvatar(
+          backgroundColor: AppColors.accent.withOpacity(0.2),
+          child: Icon(event.type.icon, color: AppColors.accent),
+        ),
+        title: Text(
+          event.title,
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        subtitle: Text(
+          DateFormat('hh:mm a').format(event.scheduledTime),
+          style: TextStyle(color: AppColors.textSecondary),
+        ),
+        trailing: Transform.scale(
+          scale: 1.2,
+          child: Checkbox(
+            value: event.isCompleted,
+            activeColor: AppColors.accent.withOpacity(0.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(50),
+            ),
+            onChanged: (value) =>
+                _toggleEventCompletion(event, value!, context),
+          ),
         ),
         onTap: () => _showEventDetails(event, context),
       ),
@@ -179,7 +288,15 @@ class _CalendarViewState extends State<CalendarView> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(event.title),
+          backgroundColor: AppColors.secondary,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+            side: BorderSide( 
+            color: AppColors.accent,
+            width: 2,
+            ),
+          ),
+          title: Text(event.title, style: TextStyle(color: AppColors.accent)),
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,

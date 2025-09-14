@@ -9,15 +9,15 @@ final ValueNotifier<bool> isDarkNotifier = ValueNotifier(false);
 class AppColors {
   // 主色（保持亮色模式黄色，暗色模式稍柔和）
   static Color get primary =>
-      isDarkNotifier.value ? const Color(0xFFE6C24D) : const Color(0xFFEFC54D);
+      isDarkNotifier.value ? const Color.fromARGB(255, 214, 195, 132) : const Color.fromARGB(255, 226, 194, 107);
 
   // 次色（背景卡片等，暗色模式深一点）
   static Color get secondary =>
-      isDarkNotifier.value ? const Color(0xFF3A3A3A) : const Color(0xFFF0E2B1);
+      isDarkNotifier.value ? const Color.fromARGB(255, 68, 68, 68) : const Color(0xFFF0E2B1);
 
   // 强调色（暗色模式偏亮的棕色）
   static Color get accent =>
-      isDarkNotifier.value ? const Color.fromARGB(255, 119, 101, 75) : const Color(0xFF7C4B00);
+      isDarkNotifier.value ? const Color.fromARGB(255, 255, 254, 254) : const Color(0xFF7C4B00);
 
   // 背景色
   static Color get background =>
@@ -25,11 +25,11 @@ class AppColors {
 
   // 文字主色
   static Color get textPrimary =>
-      isDarkNotifier.value ? const Color(0xFFEFEFEF) : const Color(0xFF333333);
+      isDarkNotifier.value ? const Color.fromARGB(255, 29, 29, 29) : const Color(0xFF333333);
 
   // 文字次色
   static Color get textSecondary =>
-      isDarkNotifier.value ? const Color(0xFFBBBBBB) : const Color(0xFF666666);
+      isDarkNotifier.value ? const Color.fromARGB(255, 255, 255, 255) : const Color(0xFF666666);
 }
 
 

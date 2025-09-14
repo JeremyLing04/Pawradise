@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/event_model.dart';
 import '../../providers/event_provider.dart';
+import '../../constants.dart';
 
 class DeleteEventDialog extends StatelessWidget {
   final Event event;
@@ -12,23 +13,51 @@ class DeleteEventDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Delete Event'),
-      content: const Text('Are you sure you want to delete this event?'),
+      backgroundColor: AppColors.secondary, // 背景主题色
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: AppColors.accent, width: 2), // 边框
+      ),
+      title: Center(
+        child: Text(
+          'Delete Event',
+          style: TextStyle(
+            color: AppColors.accent,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      content: Text(
+        'Are you sure you want to delete this event?',
+        style: TextStyle(color: AppColors.textPrimary),
+      ),
+      actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       actions: [
+        // cancel 按钮
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(
+            'Cancel',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
         ),
-        TextButton(
+        // delete 按钮（红色更突出危险操作）
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color.fromARGB(255, 221, 133, 127),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
           onPressed: () {
             final userId = FirebaseAuth.instance.currentUser!.uid;
             Provider.of<EventProvider>(
               context,
               listen: false,
-            ).deleteEvent(event.id, userId); // 传 userId
+            ).deleteEvent(event.id, userId);
             Navigator.pop(context);
           },
-          child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          child: const Text('Delete'),
         ),
       ],
     );
