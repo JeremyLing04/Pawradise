@@ -15,6 +15,11 @@ class PostModel {
   final String imageUrl;
   final List<String> keywords; // 新增关键词字段
 
+  // 新增事件相关字段
+  final DateTime? eventTime;
+  final String? eventDescription;
+  final String? eventType;
+
   PostModel({
     this.id,
     required this.authorId,
@@ -29,6 +34,9 @@ class PostModel {
     this.hasImage = false,
     this.imageUrl = '',
     required this.keywords, // 新增
+    this.eventTime,
+    this.eventDescription,
+    this.eventType,
   });
 
   factory PostModel.fromFireStore(DocumentSnapshot doc) {
@@ -47,6 +55,9 @@ class PostModel {
       hasImage: data['hasImage'] ?? false,
       imageUrl: data['imageUrl'] ?? '',
       keywords: List<String>.from(data['keywords'] ?? []), // 新增
+      eventTime: data['eventTime'] != null ? (data['eventTime'] as Timestamp).toDate() : null,
+      eventDescription: data['eventDescription'] ?? '',
+      eventType: data['eventType'] ?? 'other',
     );
   }
 
@@ -83,6 +94,9 @@ class PostModel {
       'hasImage': hasImage,
       'imageUrl': imageUrl,
       'keywords': keywords, // 新增
+      'eventTime': eventTime != null ? Timestamp.fromDate(eventTime!) : null,
+      'eventDescription': eventDescription,
+      'eventType': eventType,
     };
   }
 
@@ -132,6 +146,9 @@ class PostModel {
     required String type,
     bool hasImage = false,
     String imageUrl = '',
+    DateTime? eventTime,
+    String? eventDescription,
+    String? eventType,
   }) {
     return PostModel(
       authorId: authorId,
@@ -143,6 +160,9 @@ class PostModel {
       hasImage: hasImage,
       imageUrl: imageUrl,
       keywords: generateKeywords(title, content), // 自动生成关键词
+      eventTime: eventTime,
+      eventDescription: eventDescription,
+      eventType: eventType,
     );
   }
 
@@ -175,6 +195,9 @@ class PostModel {
       hasImage: hasImage ?? this.hasImage,
       imageUrl: imageUrl ?? this.imageUrl,
       keywords: keywords ?? this.keywords, // 新增
+      eventTime: eventTime ?? this.eventTime,
+      eventDescription: eventDescription ?? this.eventDescription,
+      eventType: eventType ?? this.eventType,
     );
   }
 

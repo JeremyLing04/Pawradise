@@ -393,59 +393,63 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       ),
     );
   }
-
+  
   // 构建事件加入按钮
   Widget _buildEventJoinButton(PostModel post) {
     final CommunityService communityService = CommunityService();
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final isOwnPost = currentUserId == post.authorId;
 
-    return FutureBuilder<bool>(
-      future: communityService.isUserJoined(widget.postId),
-      builder: (context, joinSnapshot) {
-        final isJoined = joinSnapshot.data ?? false;
-        
-        return FutureBuilder<int>(
-          future: communityService.getParticipantCount(widget.postId),
-          builder: (context, countSnapshot) {
-            final participantCount = countSnapshot.data ?? 0;
+    return FutureBuilder<int>(
+      future: communityService.getParticipantCount(widget.postId),
+      builder: (context, countSnapshot) {
+        final participantCount = countSnapshot.data ?? 0;
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    communityService.joinEvent(widget.postId, widget.postId);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(isJoined ? 'Left ${post.title}' : 'Joined ${post.title}')),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isJoined ? Colors.grey : Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  ),
-                  child: Text(
-                    isJoined ? 'Joined' : 'Join',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-                if (participantCount > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      '$participantCount ${participantCount == 1 ? 'person' : 'people'} joined',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
+        return Row(
+          children: [
+            // 参加人数徽章...
+            
+            // 加入按钮
+            if (!isOwnPost) 
+              FutureBuilder<bool>(
+                future: communityService.isUserJoined(widget.postId),
+                builder: (context, joinSnapshot) {
+                  final isJoined = joinSnapshot.data ?? false;
+                  
+                  return Container(
+                    margin: const EdgeInsets.only(left: 12),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        communityService.joinEvent(
+                          widget.postId, 
+                          widget.postId, 
+                          context,
+                          eventTitle: post.title,
+                          eventTime: post.eventTime ?? DateTime.now().add(Duration(hours: 1)),
+                          eventDescription: post.eventDescription ?? post.content,
+                          authorName: post.authorName,
+                        );
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text(isJoined ? 'Left ${post.title}' : 'Joined ${post.title}')),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isJoined ? Colors.grey : Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      ),
+                      child: Text(
+                        isJoined ? 'Joined' : 'Join',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
-                  ),
-              ],
-            );
-          },
+                  );
+                },
+              ),
+          ],
         );
       },
     );

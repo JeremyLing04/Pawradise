@@ -11,19 +11,20 @@ import '../../../models/post_model.dart';
 class PostCard extends StatelessWidget {
   final PostModel post;
   final VoidCallback onTap;
-  final String? eventId; // 新增：事件ID
+  final String? eventId;
 
   const PostCard({
     super.key, 
     required this.post, 
     required this.onTap,
-    this.eventId, // 新增：可选的事件ID
+    this.eventId,
   });
 
   @override
   Widget build(BuildContext context) {
     final CommunityService communityService = CommunityService();
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    final isOwnPost = currentUserId == post.authorId;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -32,11 +33,9 @@ class PostCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 图片部分（如果有图片）
             if (post.hasImage && post.imageUrl.isNotEmpty)
               _buildPostImage(post.imageUrl),
             
-            // 文字内容部分
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -59,7 +58,7 @@ class PostCard extends StatelessWidget {
                   
                   const SizedBox(height: 8),
                   
-                  // 帖子内容预览 - 如果是事件类型使用 Markdown
+                  // 帖子内容预览
                   post.type == 'event'
                       ? MarkdownBody(
                           data: post.content,
@@ -109,7 +108,7 @@ class PostCard extends StatelessWidget {
                   
                   // 互动统计和活动按钮
                   const SizedBox(height: 16),
-                  _buildBottomSection(context, communityService, currentUserId),
+                  _buildBottomSection(context, communityService, currentUserId, isOwnPost),
                 ],
               ),
             ),
@@ -120,7 +119,8 @@ class PostCard extends StatelessWidget {
   }
 
   // 构建底部区域（点赞、评论、活动按钮）
-  Widget _buildBottomSection(BuildContext context, CommunityService communityService, String? currentUserId) {
+  Widget _buildBottomSection(BuildContext context, CommunityService communityService, 
+      String? currentUserId, bool isOwnPost) {
     return Row(
       children: [
         // 左侧：点赞和评论
@@ -146,66 +146,93 @@ class PostCard extends StatelessWidget {
           ),
         ),
         
-        // 右侧：活动加入按钮（如果是事件类型）
+        // 右侧：参加人数徽章和加入按钮（如果是事件类型）
         if (post.type == 'event' && eventId != null)
-          _buildEventJoinButton(context, communityService, currentUserId),
+          Row(
+            children: [
+              _buildParticipantBadge(context, communityService),
+              
+              if (!isOwnPost) 
+                _buildEventJoinButton(context, communityService, currentUserId, post), // 传递 post 参数
+            ],
+          ),
       ],
     );
   }
 
-  // 在 _buildEventJoinButton 方法中修改：
-  Widget _buildEventJoinButton(BuildContext context, CommunityService communityService, String? currentUserId) {
+  // 构建参加人数徽章（所有事件帖子都显示）
+  Widget _buildParticipantBadge(BuildContext context, CommunityService communityService) {
+    return FutureBuilder<int>(
+      future: communityService.getParticipantCount(eventId!),
+      builder: (context, snapshot) {
+        final participantCount = snapshot.data ?? 0;
+        
+        return Container(
+          margin: const EdgeInsets.only(left: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.green.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.green, width: 1),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.people, size: 16, color: Colors.green[700]),
+              const SizedBox(width: 4),
+              Text(
+                '$participantCount',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green[700],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // 构建活动加入按钮
+  Widget _buildEventJoinButton(BuildContext context, CommunityService communityService, String? currentUserId, PostModel post) {
     return FutureBuilder<bool>(
       future: communityService.isUserJoined(eventId!),
       builder: (context, joinSnapshot) {
         final isJoined = joinSnapshot.data ?? false;
         
-        return FutureBuilder<int>(
-          future: communityService.getParticipantCount(eventId!),
-          builder: (context, countSnapshot) {
-            final participantCount = countSnapshot.data ?? 0;
-
-            return Container(
-              margin: const EdgeInsets.only(left: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      communityService.joinEvent(post.id!, eventId!);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(isJoined ? 'Left ${post.title}' : 'Joined ${post.title}')),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isJoined ? Colors.grey : Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      minimumSize: const Size(0, 32),
-                    ),
-                    child: Text(
-                      isJoined ? 'Joined' : 'Join',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  if (participantCount > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        '$participantCount joined',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                ],
+        return Container(
+          margin: const EdgeInsets.only(left: 8),
+          child: ElevatedButton(
+            onPressed: () {
+              communityService.joinEvent(
+                post.id!, 
+                eventId!, 
+                context,
+                eventTitle: post.title,
+                eventTime: post.eventTime ?? DateTime.now().add(Duration(hours: 1)),
+                eventDescription: post.eventDescription ?? post.content,
+                authorName: post.authorName,
+              );
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(isJoined ? 'Left ${post.title}' : 'Joined ${post.title}')),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isJoined ? Colors.grey : Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              minimumSize: const Size(0, 32),
+            ),
+            child: Text(
+              isJoined ? 'Joined' : 'Join',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
               ),
-            );
-          },
+            ),
+          ),
         );
       },
     );

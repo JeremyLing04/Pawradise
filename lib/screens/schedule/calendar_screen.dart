@@ -1,4 +1,5 @@
 //screen/schedule/calender
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
@@ -22,6 +23,21 @@ class _CalendarViewState extends State<CalendarView> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   CalendarFormat _calendarFormat = CalendarFormat.month;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEvents();
+  }
+
+  Future<void> _loadEvents() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final eventProvider = Provider.of<EventProvider>(context, listen: false);
+      await eventProvider.loadEvents(user.uid);
+      await eventProvider.loadJoinedEvents(user.uid); // 加载加入的事件
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
