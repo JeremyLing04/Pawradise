@@ -13,12 +13,16 @@ class PostCard extends StatelessWidget {
   final PostModel post;
   final VoidCallback onTap;
   final String? eventId;
+  final Function(PostModel)? onEdit;
+  final Function(String)? onDelete;
 
   const PostCard({
     super.key,
     required this.post,
     required this.onTap,
     this.eventId,
+    this.onEdit,
+    this.onDelete,
   });
 
   @override
@@ -35,7 +39,7 @@ class PostCard extends StatelessWidget {
         side: BorderSide(color: AppColors.accent, width: 2),
       ),
       elevation: 3,
-      child: ClipRRect(  // <- 让整个卡片裁圆角
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
@@ -58,8 +62,16 @@ class PostCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 帖子类型徽章
-                    _buildPostTypeBadge(post.type),
+                    // 顶部行：类型徽章和操作菜单
+                    Row(
+                      children: [
+                        // 帖子类型徽章
+                        _buildPostTypeBadge(post.type),
+                        const Spacer(),
+                        // 如果是自己的帖子，显示操作菜单
+                        if (isOwnPost) _buildPostMenu(context),
+                      ],
+                    ),
                     const SizedBox(height: 8),
 
                     // 帖子标题
@@ -73,6 +85,11 @@ class PostCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 8),
+
+                    // 地点信息
+                    if (post.location != null && post.location!['name'] != null)
+                      _buildLocationInfo(post.location!),
                     
                     const SizedBox(height: 8),
                     
@@ -120,6 +137,7 @@ class PostCard extends StatelessWidget {
                           style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                         ),
                         const Spacer(),
+                        // 时间信息
                         Text(
                           _formatTimestamp(post.createdAt),
                           style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
@@ -138,6 +156,94 @@ class PostCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  // 帖子操作菜单
+  Widget _buildPostMenu(BuildContext context) {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert, color: AppColors.textSecondary, size: 20),
+      onSelected: (value) {
+        if (value == 'edit') {
+          onEdit?.call(post);
+        } else if (value == 'delete') {
+          _showDeleteConfirmation(context);
+        }
+      },
+      itemBuilder: (BuildContext context) => [
+        const PopupMenuItem<String>(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 18),
+              SizedBox(width: 8),
+              Text('Edit'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete, size: 18, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Delete', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 显示删除确认对话框
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Post'),
+          content: const Text('Are you sure you want to delete this post? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                onDelete?.call(post.id!);
+              },
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 修改：简洁版地点信息，放在时间左边
+  Widget _buildLocationInfo(Map<String, dynamic> location) {
+    final locationName = location['name'] ?? '';
+    
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.location_on,
+          size: 14,
+          color: Colors.grey[600],
+        ),
+        const SizedBox(width: 2),
+        Text(
+          locationName,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 

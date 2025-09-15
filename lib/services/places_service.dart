@@ -6,6 +6,21 @@ class PlacesService {
   static const String _apiKey = "AIzaSyCfOOzVBxw-p_v69VjTeFrg7nVp3OJPaG8"; // 确保这是正确的API密钥
   static const String _baseUrl = 'https://maps.googleapis.com/maps/api/place';
 
+  // Fetch pet-friendly places near the user's current location
+  static Future<List<dynamic>> fetchPetFriendlyPlaces(double latitude, double longitude) async {
+    final url =
+        "$_baseUrl/nearbysearch/json?location=$latitude,$longitude&radius=5000&type=point_of_interest&keyword=pet+friendly&key=$_apiKey";
+
+    final response = await http.get(Uri.parse(url));
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['results']; // Returning list of results
+    } else {
+      throw Exception('Failed to load pet-friendly places');
+    }
+  }
+
   // 搜索地点 - 使用文本搜索
   static Future<List<Map<String, dynamic>>> searchPlaces(String query) async {
     if (query.isEmpty) return [];

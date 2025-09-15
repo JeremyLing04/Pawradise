@@ -8,13 +8,21 @@ import 'package:pawradise/services/community_service.dart';
 import 'package:pawradise/services/friends_service.dart';
 import '../../models/post_model.dart';
 import '../../models/comment_model.dart';
-import '../profile/profile_screen.dart'; // 导入 ProfileScreen
+import '../profile/profile_screen.dart';
 import '../../constants.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final String postId;
+  final Function(PostModel)? onEdit;
+  final Function(String)? onDelete;
 
-  const PostDetailScreen({super.key, required this.postId});
+  const PostDetailScreen({
+    super.key, 
+    required this.postId,
+    this.onEdit,
+    this.onDelete,
+  });
 
   @override
   State<PostDetailScreen> createState() => _PostDetailScreenState();
@@ -62,6 +70,21 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
   }
 
+  // 新增：打开Google Maps
+  Future<void> _openGoogleMaps(String address, String locationName) async {
+    final addressQuery = Uri.encodeComponent(address);
+    final url = 'https://www.google.com/maps/search/?api=1&query=$addressQuery&query_place_id=$locationName';
+    final uri = Uri.parse(url);
+    
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('无法打开Google Maps')),
+      );
+    }
+  }
+
   Future<void> _toggleFollow(String authorId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) {
@@ -87,6 +110,33 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   void _navigateToProfile(String userId) {
     Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: userId)));
+  }
+
+  // 显示删除确认对话框
+  void _showDeleteConfirmation(BuildContext context, PostModel post) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Post'),
+          content: const Text('Are you sure you want to delete this post? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                widget.onDelete?.call(post.id!);
+                Navigator.of(context).pop(); // 返回上一页
+              },
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -132,6 +182,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                             Icon(Icons.access_time, size: 16, color: Colors.grey),
                             const SizedBox(width: 4),
                             Text(_formatDetailTimestamp(post.createdAt), style: const TextStyle(fontSize: 14, color: Colors.grey)),
+                            // 新增：地点信息
+                            if (post.location != null && post.location!['name'] != null)
+                              _buildLocationInfo(post.location!),
                             const Spacer(),
                             if (post.type == 'alert')
                               Chip(
@@ -170,6 +223,52 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
+  // 新增：地点信息部件
+  Widget _buildLocationInfo(Map<String, dynamic> location) {
+    final locationName = location['name'] ?? '';
+    final locationAddress = location['description'] ?? '';
+    
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(width: 8),
+        Text(
+          '·',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.grey[400],
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: () => _openGoogleMaps(locationAddress, locationName),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.location_on,
+                size: 16,
+                color: Colors.grey[500],
+              ),
+              const SizedBox(width: 4),
+              Text(
+                locationName,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[500],
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   PreferredSizeWidget _buildAppBar(PostModel post) {
     return PreferredSize(
       preferredSize: const Size.fromHeight(70),
@@ -191,6 +290,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           ),
           centerTitle: true,
           actions: [
+            // 如果是自己的帖子，显示编辑和删除按钮
+            if (_isCurrentUserPost) _buildPostActionsMenu(post),
             if (_auth.currentUser != null && !_isCurrentUserPost) _buildFollowButton(post.authorId),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -201,6 +302,42 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  // 新增：帖子操作菜单
+  Widget _buildPostActionsMenu(PostModel post) {
+    return PopupMenuButton<String>(
+      icon: Icon(Icons.more_vert, color: AppColors.background),
+      onSelected: (value) {
+        if (value == 'edit') {
+          widget.onEdit?.call(post);
+        } else if (value == 'delete') {
+          _showDeleteConfirmation(context, post);
+        }
+      },
+      itemBuilder: (BuildContext context) => [
+        const PopupMenuItem<String>(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(Icons.edit, size: 18),
+              SizedBox(width: 8),
+              Text('Edit'),
+            ],
+          ),
+        ),
+        const PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(Icons.delete, size: 18, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Delete', style: TextStyle(color: Colors.red)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

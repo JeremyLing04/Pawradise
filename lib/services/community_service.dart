@@ -1,6 +1,7 @@
 //screens/services/community_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/event_model.dart';
@@ -10,6 +11,64 @@ import 'package:intl/intl.dart';
 class CommunityService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  // 添加删除帖子的方法
+  Future<void> deletePost(String postId, {String? imageUrl}) async {
+    try {
+      // 1. 删除所有相关评论
+      final commentsSnapshot = await _firestore
+          .collection('comments')
+          .where('postId', isEqualTo: postId)
+          .get();
+
+      final batch = _firestore.batch();
+      for (var doc in commentsSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // 2. 删除事件参与记录（如果是事件）
+      final eventParticipantsSnapshot = await _firestore
+          .collection('event_participants')
+          .where('postId', isEqualTo: postId)
+          .get();
+
+      for (var doc in eventParticipantsSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // 3. 删除点赞记录
+      final likesSnapshot = await _firestore
+          .collection('likes')
+          .where('postId', isEqualTo: postId)
+          .get();
+
+      for (var doc in likesSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // 4. 删除帖子图片（如果有）
+      if (imageUrl != null && imageUrl.isNotEmpty) {
+        try {
+          final ref = _storage.refFromURL(imageUrl);
+          await ref.delete();
+        } catch (e) {
+          print('Error deleting image: $e');
+          // 继续删除帖子，不因为图片删除失败而停止
+        }
+      }
+
+      // 5. 删除帖子本身
+      batch.delete(_firestore.collection('posts').doc(postId));
+
+      // 执行批量删除
+      await batch.commit();
+
+    } catch (e) {
+      print('Error deleting post: $e');
+      rethrow;
+    }
+  }
 
   Future<void> shareEventToCommunity(Event event) async {
     try {

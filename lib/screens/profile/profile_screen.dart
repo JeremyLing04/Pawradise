@@ -3,10 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:pawradise/models/post_model.dart';
-import 'package:pawradise/screens/community/post_detail_screen.dart';
-import 'package:pawradise/screens/community/widgets/post_card.dart';
+import 'package:pawradise/screens/community/edit_post_screen.dart';
 import '../../constants.dart';
 import '../../services/friends_service.dart';
+import '../../services/community_service.dart';
 import 'profile_header.dart';
 import 'profile_pets_tab.dart';
 import 'profile_posts_tab.dart';
@@ -28,6 +28,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProviderStateMixin {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FriendsService _friendsService = FriendsService();
+  final CommunityService _communityService = CommunityService();
   
   late TabController _tabController;
   String? _displayUserId;
@@ -82,7 +83,8 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         });
       }
     } catch (e) {
-      print('Failed to load user data: $e');
+      // 在生产环境中可以使用 logger 替代 print
+      debugPrint('Failed to load user data: $e');
     }
   }
 
@@ -106,7 +108,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         _followersCount = followersCount;
       });
     } catch (e) {
-      print('Error loading stats: $e');
+      debugPrint('Error loading stats: $e');
     }
   }
 
@@ -117,11 +119,13 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         currentUser.uid != _displayUserId) {
       try {
         final isFollowing = await _friendsService.isFollowing(_displayUserId!);
-        setState(() {
-          _isFollowing = isFollowing;
-        });
+        if (mounted) {
+          setState(() {
+            _isFollowing = isFollowing;
+          });
+        }
       } catch (e) {
-        print('Error checking follow status: $e');
+        debugPrint('Error checking follow status: $e');
       }
     }
   }
@@ -139,22 +143,96 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         await _friendsService.followUser(_displayUserId!);
       }
       
-      setState(() {
-        _isFollowing = !_isFollowing;
-        _followersCount = _isFollowing ? _followersCount + 1 : _followersCount - 1;
-      });
+      if (mounted) {
+        setState(() {
+          _isFollowing = !_isFollowing;
+          _followersCount = _isFollowing ? _followersCount + 1 : _followersCount - 1;
+        });
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Action failed: $e')),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Action failed: $e')),
+        );
+      }
+    }
+  }
+
+  // 编辑帖子的方法
+  void _editPost(PostModel post) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditPostScreen(post: post),
+      ),
+    ).then((_) {
+      // 编辑完成后刷新数据
+      _refreshProfileData();
+    });
+  }
+
+  // 删除帖子的方法
+  Future<void> _deletePost(String postId) async {
+    // 首先获取帖子信息以获取图片URL
+    final postDoc = await FirebaseFirestore.instance
+        .collection('posts')
+        .doc(postId)
+        .get();
+    
+    if (postDoc.exists) {
+      final post = PostModel.fromFireStore(postDoc);
+      
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete Post'),
+          content: const Text('Are you sure you want to delete this post? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
       );
+
+      if (confirmed == true) {
+        try {
+          await _communityService.deletePost(
+            postId, 
+            imageUrl: post.hasImage ? post.imageUrl : null
+          );
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Post deleted successfully')),
+            );
+          }
+          
+          // 删除成功后刷新数据
+          _refreshProfileData();
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to delete post: $e')),
+            );
+          }
+        }
+      }
     }
   }
 
   // Refresh profile data
   void _refreshProfileData() {
-    _loadUserData();
-    _loadStats();
-    _checkFollowStatus();
+    if (mounted) {
+      _loadUserData();
+      _loadStats();
+      _checkFollowStatus();
+    }
   }
 
   @override
@@ -204,7 +282,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             followersCount: _followersCount,
             onFollowPressed: isOwnProfile ? null : _toggleFollow,
             isFollowing: _isFollowing,
-            onProfileUpdated: _refreshProfileData, // callback for refresh
+            onProfileUpdated: _refreshProfileData,
           ),
           
           // Tab bar for Pets / Posts
@@ -215,7 +293,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               indicatorColor: AppColors.background,
               labelColor: AppColors.background,
               unselectedLabelColor: AppColors.accent,
-              tabs: [
+              tabs: const [
                 Tab(text: 'Pets'),
                 Tab(text: 'Posts'),
               ],
@@ -230,7 +308,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 controller: _tabController,
                 children: [
                   ProfilePetsTab(userId: _displayUserId!, isOwnProfile: isOwnProfile),
-                  ProfilePostsTab(userId: _displayUserId!),
+                  ProfilePostsTab(
+                    userId: _displayUserId!,
+                    isCurrentUser: isOwnProfile,
+                    onEdit: isOwnProfile ? _editPost : null,
+                    onDelete: isOwnProfile ? _deletePost : null,
+                  ),
                 ],
               ),
             ),

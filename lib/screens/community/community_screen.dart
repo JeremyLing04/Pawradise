@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:pawradise/screens/community/edit_post_screen.dart';
 import 'package:pawradise/screens/community/search_screen.dart';
 import 'create_post_screen.dart';
 import 'post_detail_screen.dart';
@@ -10,6 +11,7 @@ import '../../models/post_model.dart';
 import 'friends_screen.dart';
 import 'chat_list_screen.dart';
 import '../../constants.dart';
+import '../../services/community_service.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -23,6 +25,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   final List<String> _filterOptions = ['all', 'discussion', 'alert', 'event'];
   int _currentTabIndex = 0;
   final TextEditingController _searchController = TextEditingController();
+  final CommunityService _communityService = CommunityService();
 
   // Stream of posts filtered by type
   Stream<QuerySnapshot> get _filteredPosts {
@@ -35,6 +38,70 @@ class _CommunityScreenState extends State<CommunityScreen> {
             .where('type', isEqualTo: _selectedFilter)
             .orderBy('createdAt', descending: true);
     return query.snapshots();
+  }
+
+  // 编辑帖子的方法
+  void _editPost(BuildContext context, PostModel post) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditPostScreen(post: post),
+      ),
+    ).then((_) {
+      // 可选：在编辑完成后刷新页面
+      setState(() {});
+    });
+  }
+
+  // 删除帖子的方法
+  Future<void> _deletePost(BuildContext context, String postId) async {
+    // 首先获取帖子信息以获取图片URL
+    final postDoc = await FirebaseFirestore.instance
+        .collection('posts')
+        .doc(postId)
+        .get();
+    
+    if (postDoc.exists) {
+      final post = PostModel.fromFireStore(postDoc);
+      
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Delete Post'),
+          content: const Text('Are you sure you want to delete this post? This action cannot be undone.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == true) {
+        try {
+          await _communityService.deletePost(
+            postId, 
+            imageUrl: post.hasImage ? post.imageUrl : null
+          );
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Post deleted successfully')),
+          );
+          
+          // 刷新页面
+          setState(() {});
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to delete post: $e')),
+          );
+        }
+      }
+    }
   }
 
   // Build posts from followed users
@@ -266,17 +333,27 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
         return PostCard(
           post: post,
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PostDetailScreen(postId: doc.id),
-            ),
-          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PostDetailScreen(
+                  postId: post.id!,
+                  onEdit: (postToEdit) => _editPost(context, postToEdit),
+                  onDelete: (postId) => _deletePost(context, postId),
+                ),
+              ),
+            );
+          },
           eventId: post.type == 'event' ? doc.id : null,
+          onEdit: (postToEdit) => _editPost(context, postToEdit),
+          onDelete: (postId) => _deletePost(context, postId),
         );
       },
     );
   }
+
+  
 
   // Build navigation tabs
   Widget _buildNavigationTabs() {
@@ -393,4 +470,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
         return Icons.category;
     }
   }
+
+  
 }

@@ -6,7 +6,7 @@ import 'package:pawradise/screens/community/create_post_screen.dart';
 import 'package:pawradise/constants.dart';
 import '../../models/location_model.dart';
 import 'package:permission_handler/permission_handler.dart' as permission_handler;
-import '../../models/places_service.dart';
+import '../../services/places_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'share_screen.dart';
 

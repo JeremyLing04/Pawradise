@@ -1,6 +1,7 @@
 // dashboard_screen.dart
 import 'package:flutter/material.dart';
 import 'package:pawradise/screens/map/map_screen.dart';
+import 'package:pawradise/services/places_service.dart';
 import '../constants.dart';
 import 'community/community_screen.dart';
 import 'profile/profile_screen.dart';
