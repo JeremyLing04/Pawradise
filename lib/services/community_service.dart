@@ -16,11 +16,9 @@ class CommunityService {
       final user = _auth.currentUser;
       if (user == null) return;
 
-      // 获取用户信息
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       final username = userDoc['username'] ?? 'Pet Owner';
 
-      // 创建社区帖子（包含事件信息）
       final post = PostModel.createNew(
         authorId: user.uid,
         authorName: username,
@@ -29,16 +27,13 @@ class CommunityService {
         type: 'event',
         hasImage: false,
         imageUrl: '',
-        // 传递事件信息
         eventTime: event.scheduledTime,
         eventDescription: event.description ?? 'Join me for this pet activity!',
         eventType: event.type.toString().split('.').last,
       );
 
-      // 保存到社区
       final postRef = await _firestore.collection('posts').add(post.toMap());
       
-      // 更新事件的分享状态
       await _firestore
           .collection('users')
           .doc(event.userId)
@@ -59,7 +54,6 @@ class CommunityService {
 
     String joinText = '';
 
-    // 根据不同活动类型生成不同的加入文本
     switch (event.type) {
       case EventType.walk:
         joinText = 'Click "Join" to walk together!';
@@ -96,7 +90,6 @@ $joinText
 ''';
   }
 
-  // 修改 joinEvent 方法签名
   Future<void> joinEvent(String postId, String eventId, BuildContext context, {
     required String eventTitle,
     required DateTime eventTime,
@@ -107,7 +100,6 @@ $joinText
       final user = _auth.currentUser;
       if (user == null) return;
 
-      // 检查是否已经加入
       final existingJoin = await _firestore
           .collection('event_participants')
           .where('postId', isEqualTo: postId)
@@ -115,21 +107,17 @@ $joinText
           .get();
 
       if (existingJoin.docs.isNotEmpty) {
-        // 取消加入并删除事件
         await _firestore
             .collection('event_participants')
             .doc(existingJoin.docs.first.id)
             .delete();
 
-        // 删除用户的个人日程事件
         await _deleteJoinedEvent(user.uid, postId);
 
-        // 更新参与计数
         await _firestore.collection('posts').doc(postId).update({
           'participants': FieldValue.increment(-1),
         });
       } else {
-        // 创建个人日程事件
         await _createJoinedEvent(
           userId: user.uid,
           postId: postId,
@@ -139,7 +127,6 @@ $joinText
           authorName: authorName,
         );
 
-        // 添加到参与列表
         await _firestore.collection('event_participants').add({
           'postId': postId,
           'eventId': eventId,
@@ -147,7 +134,6 @@ $joinText
           'joinedAt': Timestamp.now(),
         });
 
-        // 更新参与计数
         await _firestore.collection('posts').doc(postId).update({
           'participants': FieldValue.increment(1),
         });
@@ -157,7 +143,6 @@ $joinText
     }
   }
 
-  // 检查用户是否已加入活动
   Future<bool> isUserJoined(String postId) async {
     try {
       final user = _auth.currentUser;
@@ -194,7 +179,6 @@ $joinText
     return snapshot.docs.length;
   }
 
-  // 简化的事件创建方法
   Future<void> _createJoinedEvent({
     required String userId,
     required String postId,
@@ -204,7 +188,6 @@ $joinText
     required String authorName,
   }) async {
     try {
-      // 创建新事件
       final event = Event(
         id: 'joined_${postId}_${DateTime.now().millisecondsSinceEpoch}',
         userId: userId,
@@ -219,7 +202,6 @@ $joinText
         sharedToCommunity: false,
       );
 
-      // 保存到用户的个人事件集合
       await _firestore
           .collection('users')
           .doc(userId)
@@ -232,7 +214,6 @@ $joinText
     }
   }
 
-  // 从帖子内容解析事件信息
   Map<String, dynamic> _parseEventInfoFromPost(PostModel post) {
     final result = {
       'scheduledTime': DateTime.now().add(Duration(hours: 1)), // 默认时间
@@ -240,7 +221,6 @@ $joinText
     };
 
     try {
-      // 尝试从帖子内容中解析时间信息
       final timeMatch = RegExp(r'Time:\s*(.*?)\n').firstMatch(post.content);
       final dateMatch = RegExp(r'on\s*(.*?)\n').firstMatch(post.content);
       
@@ -270,7 +250,6 @@ $joinText
     return result;
   }
 
-  // 删除方法保持不变
   Future<void> _deleteJoinedEvent(String userId, String postId) async {
     try {
       final eventsSnapshot = await _firestore

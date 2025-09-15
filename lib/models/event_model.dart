@@ -36,16 +36,15 @@ class Event {
       'title': title,
       'description': description,
       'type': type.toString().split('.').last,
-      'scheduledTime': Timestamp.fromDate(scheduledTime),
-      'isCompleted': isCompleted ? 1 : 0,
-      'createdAt': Timestamp.fromDate(createdAt),
+      'scheduledTime': Timestamp.fromDate(scheduledTime), 
+      'isCompleted': isCompleted,
+      'createdAt': Timestamp.fromDate(createdAt), 
       'notificationMinutes': notificationMinutes,
       'sharedToCommunity': sharedToCommunity,
     };
   }
 
   factory Event.fromMap(Map<String, dynamic> map) {
-    // 处理 scheduledTime - 支持 Timestamp 和 int 两种格式
     DateTime parseScheduledTime(dynamic timeData) {
       if (timeData is Timestamp) {
         return timeData.toDate();
@@ -56,7 +55,6 @@ class Event {
       }
     }
 
-    // 处理 createdAt - 支持 Timestamp 和 int 两种格式
     DateTime parseCreatedAt(dynamic timeData) {
       if (timeData is Timestamp) {
         return timeData.toDate();
@@ -67,7 +65,6 @@ class Event {
       }
     }
 
-    // 处理 isCompleted - 支持 bool 和 int 两种格式
     bool parseIsCompleted(dynamic completedData) {
       if (completedData is bool) {
         return completedData;
@@ -78,7 +75,6 @@ class Event {
       }
     }
 
-    // 处理 sharedToCommunity - 支持 bool 和 int 两种格式
     bool parseSharedToCommunity(dynamic sharedData) {
       if (sharedData is bool) {
         return sharedData;
@@ -107,7 +103,6 @@ class Event {
     );
   }
 
-  // 添加一个便捷的工厂方法用于从 Firestore 文档创建事件
   factory Event.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     return Event.fromMap({...data, 'id': doc.id});

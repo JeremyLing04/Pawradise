@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:pawradise/screens/community/profile_screen.dart';
+import 'package:pawradise/screens/profile/profile_screen.dart';
 import 'package:pawradise/services/chat_service.dart';
 import 'package:pawradise/models/chat_model.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import '../../constants.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatRoomId;
@@ -34,19 +35,14 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    // 标记为已读
     _chatService.markAsRead(widget.chatRoomId);
-    
-    // 滚动到底部
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
     });
 
-    // 监听焦点变化，键盘弹出时滚动到底部
     _focusNode.addListener(() {
-      if (_focusNode.hasFocus) {
-        _scrollToBottom();
-      }
+      if (_focusNode.hasFocus) _scrollToBottom();
     });
   }
 
@@ -111,53 +107,53 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: Colors.green[100],
-              child: Text(
-                widget.otherUserName[0].toUpperCase(),
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.green[800],
-                  fontWeight: FontWeight.bold,
+      backgroundColor: AppColors.secondary,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+          child: AppBar(
+            title: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: AppColors.accent.withOpacity(0.2),
+                  child: Text(
+                    widget.otherUserName[0].toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.accent,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
+                const SizedBox(width: 12),
+                Text(
+                  widget.otherUserName,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+            centerTitle: true,
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.background,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.info_outline),
+                onPressed: _showUserInfo,
               ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              widget.otherUserName,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info_outline),
-            onPressed: () {
-              _showUserInfo();
-            },
+            ],
           ),
-        ],
+        ),
       ),
       body: Column(
         children: [
-          // 消息列表
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: _chatService.getChatMessages(widget.chatRoomId),
               builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
-
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
+                if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
 
                 final messages = snapshot.data?.docs ?? [];
 
@@ -166,18 +162,11 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.chat_bubble_outline,
-                          size: 64,
-                          color: Colors.grey[400],
-                        ),
+                        Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey[400]),
                         const SizedBox(height: 16),
                         Text(
                           'Start a conversation with ${widget.otherUserName}',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
+                          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                           textAlign: TextAlign.center,
                         ),
                       ],
@@ -185,10 +174,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                 }
 
-                // 监听消息变化并滚动到底部
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _scrollToBottom();
-                });
+                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
 
                 return ListView.builder(
                   controller: _scrollController,
@@ -202,8 +188,6 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
           ),
-
-          // 消息输入栏
           _buildMessageInput(),
         ],
       ),
@@ -222,32 +206,22 @@ class _ChatScreenState extends State<ChatScreen> {
           if (!isMe)
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.green[100],
+              backgroundColor: AppColors.accent.withOpacity(0.2),
               child: Text(
                 message.senderName[0].toUpperCase(),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.green[800],
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 12, color: AppColors.accent, fontWeight: FontWeight.bold),
               ),
             ),
           if (!isMe) const SizedBox(width: 8),
           Flexible(
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
-                color: isMe ? Colors.green : Colors.grey[100],
+                color: isMe ? AppColors.accent.withOpacity(0.7) : AppColors.primary,
                 borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppColors.accent, width: 2),
                 boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 2,
-                    offset: const Offset(0, 1),
-                  ),
+                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 2, offset: const Offset(0, 1)),
                 ],
               ),
               child: Column(
@@ -256,67 +230,31 @@ class _ChatScreenState extends State<ChatScreen> {
                   if (!isMe)
                     Text(
                       message.senderName,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green[800],
-                      ),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.accent),
                     ),
                   if (!isMe) const SizedBox(height: 2),
-                  // 检查是否为图片消息
                   if (message.type == 'image')
                     GestureDetector(
-                      onTap: () {
-                        _showImageDialog(message.content);
-                      },
+                      onTap: () => _showImageDialog(message.content),
                       child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(12),
                         child: Image.network(
                           message.content,
                           width: 200,
                           height: 200,
                           fit: BoxFit.cover,
-                          loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              width: 200,
-                              height: 200,
-                              color: Colors.grey[200],
-                              child: Center(
-                                child: CircularProgressIndicator(
-                                  value: loadingProgress.expectedTotalBytes != null
-                                      ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
-                                      : null,
-                                ),
-                              ),
-                            );
-                          },
-                          errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
-                            return Container(
-                              width: 200,
-                              height: 200,
-                              color: Colors.grey[200],
-                              child: const Icon(Icons.error),
-                            );
-                          },
                         ),
                       ),
                     )
                   else
                     Text(
                       message.content,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: isMe ? Colors.white : Colors.black87,
-                      ),
+                      style: TextStyle(fontSize: 16, color: isMe ? AppColors.background : Colors.black87),
                     ),
                   const SizedBox(height: 4),
                   Text(
                     _formatMessageTime(message.timestamp),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isMe ? Colors.white70 : Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 10, color: isMe ? AppColors.background : Colors.grey[600]),
                   ),
                 ],
               ),
@@ -326,14 +264,10 @@ class _ChatScreenState extends State<ChatScreen> {
           if (isMe)
             CircleAvatar(
               radius: 16,
-              backgroundColor: Colors.green[100],
+              backgroundColor: AppColors.accent.withOpacity(0.2),
               child: Text(
                 message.senderName[0].toUpperCase(),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.green[800],
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 12, color: AppColors.accent, fontWeight: FontWeight.bold),
               ),
             ),
         ],
@@ -345,34 +279,20 @@ class _ChatScreenState extends State<ChatScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade300)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, -2),
-          ),
-        ],
+        color: AppColors.primary,
+        border: Border(top: BorderSide(color: AppColors.accent, width: 2)),
       ),
       child: Row(
         children: [
-          // 附加功能按钮
           IconButton(
-            onPressed: () {
-              _showAttachmentOptions();
-            },
-            icon: Icon(Icons.add_circle_outline, color: Colors.green),
+            onPressed: _showAttachmentOptions,
+            icon: Icon(Icons.add_circle_outline, color: AppColors.accent),
             iconSize: 28,
           ),
           const SizedBox(width: 8),
-          
-          // 消息输入框
           Expanded(
             child: Container(
-              constraints: const BoxConstraints(
-                maxHeight: 120,
-              ),
+              constraints: const BoxConstraints(maxHeight: 120),
               child: TextField(
                 controller: _messageController,
                 focusNode: _focusNode,
@@ -380,39 +300,28 @@ class _ChatScreenState extends State<ChatScreen> {
                   hintText: 'Type a message...',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(25),
-                    borderSide: BorderSide.none,
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
                   ),
                   filled: true,
-                  fillColor: Colors.grey[100],
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
+                  fillColor: AppColors.secondary,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
                 maxLines: null,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _sendMessage(),
-                onChanged: (text) {
-                  setState(() {}); // 更新发送按钮状态
-                },
+                onChanged: (text) => setState(() {}),
               ),
             ),
           ),
           const SizedBox(width: 8),
-          
-          // 发送按钮
           Container(
             decoration: BoxDecoration(
-              color: _messageController.text.trim().isEmpty
-                  ? Colors.grey[300]
-                  : Colors.green,
+              color: _messageController.text.trim().isEmpty ? Colors.grey[300] : AppColors.accent,
               shape: BoxShape.circle,
             ),
             child: IconButton(
-              onPressed: _messageController.text.trim().isEmpty
-                  ? null
-                  : _sendMessage,
-              icon: const Icon(Icons.send, color: Colors.white),
+              onPressed: _messageController.text.trim().isEmpty ? null : _sendMessage,
+              icon: Icon(Icons.send, color: AppColors.background),
               iconSize: 24,
             ),
           ),
@@ -424,12 +333,10 @@ class _ChatScreenState extends State<ChatScreen> {
   String _formatMessageTime(Timestamp timestamp) {
     final date = timestamp.toDate();
     final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inMinutes < 1) return 'now';
-    if (difference.inHours < 1) return '${difference.inMinutes}m ago';
-    if (difference.inDays < 1) return '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-    
+    final diff = now.difference(date);
+    if (diff.inMinutes < 1) return 'now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
     return '${date.month}/${date.day} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 
@@ -440,45 +347,26 @@ class _ChatScreenState extends State<ChatScreen> {
         title: Text(widget.otherUserName),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
               child: CircleAvatar(
                 radius: 40,
-                backgroundColor: Colors.green[100],
+                backgroundColor: AppColors.accent.withOpacity(0.2),
                 child: Text(
                   widget.otherUserName[0].toUpperCase(),
-                  style: TextStyle(
-                    fontSize: 32,
-                    color: Colors.green[800],
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 32, color: AppColors.accent, fontWeight: FontWeight.bold),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              'Chat with ${widget.otherUserName}',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            Text('Chat with ${widget.otherUserName}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
           TextButton(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ProfileScreen(userId: widget.otherUserId),
-                ),
-              );
+              Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: widget.otherUserId)));
             },
             child: const Text('View Profile'),
           ),
@@ -494,7 +382,7 @@ class _ChatScreenState extends State<ChatScreen> {
         child: Wrap(
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Colors.green),
+              leading: Icon(Icons.photo_library, color: AppColors.accent),
               title: const Text('Photo Library'),
               onTap: () {
                 Navigator.pop(context);
@@ -502,7 +390,7 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: Colors.green),
+              leading: Icon(Icons.camera_alt, color: AppColors.accent),
               title: const Text('Take Photo'),
               onTap: () {
                 Navigator.pop(context);
@@ -523,14 +411,11 @@ class _ChatScreenState extends State<ChatScreen> {
           width: MediaQuery.of(context).size.width * 0.9,
           height: MediaQuery.of(context).size.height * 0.7,
           decoration: BoxDecoration(
-            image: DecorationImage(
-              image: NetworkImage(imageUrl),
-              fit: BoxFit.contain,
-            ),
+            borderRadius: BorderRadius.circular(16),
+            image: DecorationImage(image: NetworkImage(imageUrl), fit: BoxFit.contain),
           ),
         ),
       ),
     );
   }
-  
 }

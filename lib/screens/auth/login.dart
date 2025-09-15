@@ -1,4 +1,4 @@
-//screens/auth/login.dart
+// screens/auth/login.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../constants.dart';
@@ -21,15 +21,17 @@ class _LoginState extends State<Login> {
   String? _emailError;
   String? _passwordError;
 
+  // Login method
   void _login() async {
     print('🔐 Login button pressed');
     
-    // 清除之前的错误
+    // Clear previous errors
     setState(() {
       _emailError = null;
       _passwordError = null;
     });
 
+    // Validate form
     if (!_formKey.currentState!.validate()) {
       print('❌ Form validation failed');
       return;
@@ -67,12 +69,10 @@ class _LoginState extends State<Login> {
     } catch (e) {
       print('❌ Login Error: $e');
       
-      // 检查是否是插件bug
+      // Handle potential plugin bug
       if (e.toString().contains("List<Object?>") && e.toString().contains("PigeonUserDetails")) {
         print('⚠️ Plugin bug detected, checking if user was actually signed in');
-        
         await Future.delayed(Duration(seconds: 2));
-        
         final currentUser = FirebaseAuth.instance.currentUser;
         if (currentUser != null) {
           print('✅ User was actually signed in: ${currentUser.uid}');
@@ -87,7 +87,7 @@ class _LoginState extends State<Login> {
         }
       }
       
-      // 根据错误类型在相应字段下方显示错误
+      // Show error messages under relevant fields
       final errorMessage = e.toString();
       if (errorMessage.contains('No account found with this email') || 
           errorMessage.contains('user-not-found')) {
@@ -101,7 +101,6 @@ class _LoginState extends State<Login> {
         });
       } else if (errorMessage.contains('invalid-credential') || 
                 errorMessage.contains('The supplied auth credential')) {
-        // 方案4：智能判断错误类型
         final email = _emailController.text.trim();
         if (email.isEmpty || !email.contains('@')) {
           setState(() {
@@ -109,14 +108,12 @@ class _LoginState extends State<Login> {
             _passwordError = null;
           });
         } else {
-          // 邮箱格式正确，很可能是密码错误
           setState(() {
             _emailError = null;
             _passwordError = 'Incorrect password';
           });
         }
       } else {
-        // 其他错误显示在SnackBar
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(errorMessage),
@@ -128,45 +125,6 @@ class _LoginState extends State<Login> {
     } finally {
       setState(() => _isLoading = false);
       print('🏁 Login process completed');
-    }
-  }
-
-  void _resetPassword() async {
-    if (_emailController.text.isEmpty || !_emailController.text.contains('@')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please enter a valid email first'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    try {
-      await _authService.sendPasswordResetEmail(_emailController.text.trim());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Password reset email sent! Check your inbox.'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 4),
-        ),
-      );
-    } catch (e) {
-      String errorMessage = 'Failed to send reset email';
-      if (e.toString().contains('user-not-found')) {
-        errorMessage = 'No account found with this email';
-        setState(() {
-          _emailError = errorMessage;
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMessage),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
     }
   }
 
@@ -196,7 +154,7 @@ class _LoginState extends State<Login> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildDogHeader(),
+                      _buildDogHeader(), // Custom header
                       SizedBox(height: 40),
 
                       Card(
@@ -228,7 +186,7 @@ class _LoginState extends State<Login> {
                                 ),
                                 SizedBox(height: 24),
 
-                                // Email 输入框
+                                // Email input
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -255,21 +213,12 @@ class _LoginState extends State<Login> {
                                       keyboardType: TextInputType.emailAddress,
                                       textInputAction: TextInputAction.next,
                                       validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Please enter your email';
-                                        }
-                                        if (!value.contains('@')) {
-                                          return 'Please enter a valid email';
-                                        }
+                                        if (value == null || value.isEmpty) return 'Please enter your email';
+                                        if (!value.contains('@')) return 'Please enter a valid email';
                                         return null;
                                       },
                                       onChanged: (_) {
-                                        // 用户开始输入时清除错误
-                                        if (_emailError != null) {
-                                          setState(() {
-                                            _emailError = null;
-                                          });
-                                        }
+                                        if (_emailError != null) setState(() => _emailError = null);
                                       },
                                     ),
                                     if (_emailError != null)
@@ -277,17 +226,14 @@ class _LoginState extends State<Login> {
                                         padding: EdgeInsets.only(top: 4, left: 12),
                                         child: Text(
                                           _emailError!,
-                                          style: TextStyle(
-                                            color: Colors.red,
-                                            fontSize: 12,
-                                          ),
+                                          style: TextStyle(color: Colors.red, fontSize: 12),
                                         ),
                                       ),
                                   ],
                                 ),
                                 SizedBox(height: 16),
 
-                                // 密码输入框
+                                // Password input
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -323,21 +269,12 @@ class _LoginState extends State<Login> {
                                       textInputAction: TextInputAction.done,
                                       onFieldSubmitted: (_) => _login(),
                                       validator: (value) {
-                                        if (value == null || value.isEmpty) {
-                                          return 'Please enter your password';
-                                        }
-                                        if (value.length < 6) {
-                                          return 'Password must be at least 6 characters';
-                                        }
+                                        if (value == null || value.isEmpty) return 'Please enter your password';
+                                        if (value.length < 6) return 'Password must be at least 6 characters';
                                         return null;
                                       },
                                       onChanged: (_) {
-                                        // 用户开始输入时清除错误
-                                        if (_passwordError != null) {
-                                          setState(() {
-                                            _passwordError = null;
-                                          });
-                                        }
+                                        if (_passwordError != null) setState(() => _passwordError = null);
                                       },
                                     ),
                                     if (_passwordError != null)
@@ -345,38 +282,14 @@ class _LoginState extends State<Login> {
                                         padding: EdgeInsets.only(top: 4, left: 12),
                                         child: Text(
                                           _passwordError!,
-                                          style: TextStyle(
-                                            color: Colors.red,
-                                            fontSize: 12,
-                                          ),
+                                          style: TextStyle(color: Colors.red, fontSize: 12),
                                         ),
                                       ),
                                   ],
                                 ),
-                                SizedBox(height: 8),
-
-                                // 忘记密码
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton(
-                                    onPressed: _isLoading ? null : _resetPassword,
-                                    style: TextButton.styleFrom(
-                                      padding: EdgeInsets.zero,
-                                      minimumSize: Size(50, 30),
-                                    ),
-                                    child: Text(
-                                      'Forgot Password?',
-                                      style: TextStyle(
-                                        color: AppColors.primary,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ),
                                 SizedBox(height: 16),
 
-                                // 登录按钮
+                                // Login button
                                 SizedBox(
                                   width: double.infinity,
                                   child: ElevatedButton(
@@ -401,25 +314,19 @@ class _LoginState extends State<Login> {
                                           )
                                         : Text(
                                             'Sign In',
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                                           ),
                                   ),
                                 ),
                                 SizedBox(height: 16),
 
-                                // 注册链接
+                                // Sign up link
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
                                       "Don't have an account? ",
-                                      style: TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: 14,
-                                      ),
+                                      style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                                     ),
                                     GestureDetector(
                                       onTap: _isLoading ? null : () => Navigator.pushNamed(context, '/register'),
@@ -450,7 +357,7 @@ class _LoginState extends State<Login> {
     );
   }
 
-  // CUSTOM HEADER
+  // Custom header widget
   Widget _buildDogHeader() {
     return Column(
       children: [
@@ -468,11 +375,7 @@ class _LoginState extends State<Login> {
               ),
             ],
           ),
-          child: Icon(
-            Icons.pets,
-            size: 60,
-            color: AppColors.primary,
-          ),
+          child: Icon(Icons.pets, size: 60, color: AppColors.primary),
         ),
         SizedBox(height: 16),
         Text(
@@ -481,22 +384,12 @@ class _LoginState extends State<Login> {
             fontSize: 32,
             fontWeight: FontWeight.bold,
             color: AppColors.accent,
-            shadows: [
-              Shadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 4,
-                offset: Offset(0, 2),
-              ),
-            ],
+            shadows: [Shadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: Offset(0, 2))],
           ),
         ),
         Text(
           'Your Pet\'s Paradise',
-          style: TextStyle(
-            fontSize: 16,
-            color: Colors.white70,
-            fontStyle: FontStyle.italic,
-          ),
+          style: TextStyle(fontSize: 16, color: Colors.white70, fontStyle: FontStyle.italic),
         ),
       ],
     );

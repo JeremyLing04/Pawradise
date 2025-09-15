@@ -1,4 +1,3 @@
-// screens/profile/add_edit_pet_screen.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/rendering.dart';
@@ -46,6 +45,7 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
     }
   }
 
+  /// Get current logged-in user ID
   void _getCurrentUser() {
     final user = _auth.currentUser;
     if (user != null) {
@@ -55,6 +55,7 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
     }
   }
 
+  /// Pick image from gallery and identify breed via AI
   Future<void> _pickImage() async {
     final pickedFile = await _imagePicker.pickImage(source: ImageSource.gallery);
     
@@ -65,21 +66,21 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
       });
     }
 
-    try{
+    try {
       final suggestedBreed = await AIService.identifyDogBreed(_selectedImage!);
 
-      if(mounted){
+      if (mounted) {
         setState(() {
           _aiSuggestedBreed = suggestedBreed;
           _isIdentifyingBreed = false;
         });
 
-        if (suggestedBreed != null && suggestedBreed != 'Unknown'){
+        if (suggestedBreed != null && suggestedBreed != 'Unknown') {
           _showBreedConfirmationDialog(suggestedBreed);
         }
       }
-    }catch(e){
-      if(mounted){
+    } catch (e) {
+      if (mounted) {
         setState(() {
           _isIdentifyingBreed = false;
         });
@@ -88,24 +89,22 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
     }
   }
 
-  // 显示品种确认对话框
+  /// Show dialog to confirm AI-suggested breed
   void _showBreedConfirmationDialog(String suggestedBreed) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('AI detection result', style: TextStyle(fontSize: 15),),
+        title: Text('AI detection result', style: TextStyle(fontSize: 15)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               suggestedBreed,
-              style: TextStyle(
-                fontSize: 25,
-              ),
+              style: TextStyle(fontSize: 25),
             ),
             SizedBox(height: 16),
             Text(
-              'Is it correct breed of your pet?',
+              'Is this the correct breed of your pet?',
               style: TextStyle(fontSize: 15),
             ),
           ],
@@ -132,7 +131,7 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
     );
   }
 
-  // 显示品种修正对话框
+  /// Show dialog to correct breed if AI suggestion is incorrect
   void _showBreedCorrectionDialog(String suggestedBreed) {
     final correctionController = TextEditingController();
     
@@ -145,12 +144,12 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
           children: [
             Text(suggestedBreed),
             SizedBox(height: 8),
-            Text('不是这个品种吗？请输入正确的品种：'),
+            Text('Is this not the breed? Enter the correct breed:'),
             SizedBox(height: 16),
             TextFormField(
               controller: correctionController,
               decoration: InputDecoration(
-                labelText: '正确品种',
+                labelText: 'Correct Breed',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -159,7 +158,7 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('取消'),
+            child: Text('Cancel'),
           ),
           TextButton(
             onPressed: () {
@@ -170,14 +169,14 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
               }
               Navigator.pop(context);
             },
-            child: Text('确定'),
+            child: Text('Confirm'),
           ),
         ],
       ),
     );
   }
 
-  // 构建品种字段（添加AI识别功能）
+  /// Build breed text field with AI identification progress indicator
   Widget _buildBreedField() {
     return Stack(
       children: [
@@ -198,7 +197,7 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
                 height: 16,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                  valueColor: AlwaysStoppedAnimation(AppColors.background),
                 ),
               ),
             ),
@@ -206,7 +205,6 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
       ],
     );
   }
-
 
   void _showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -228,6 +226,7 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
     );
   }
 
+  /// Save new or updated pet
   Future<void> _savePet() async {
     if (!_formKey.currentState!.validate() || _userId == null) return;
 
@@ -265,6 +264,7 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
     }
   }
 
+  /// Delete pet after user confirmation
   Future<void> _deletePet() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -358,94 +358,9 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Welcome Card with Image Picker
                           _buildWelcomeCard(isEditing),
                           SizedBox(height: 32),
-                          
-                          // Centered Glassmorphism Form Card
-                          Container(
-                            constraints: BoxConstraints(maxWidth: 500),
-                            child: Container(
-                              width: double.infinity,
-                              padding: EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: Color(0xFFA78B6D),
-                                  width: 2.0,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withOpacity(0.2),
-                                    blurRadius: 8,
-                                    spreadRadius: 1,
-                                    offset: Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Form(
-                                key: _formKey,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    // Pet Image Picker
-                                    _buildImagePicker(),
-                                    SizedBox(height: 20),
-                                    
-                                    // Pet Name
-                                    _buildTextField('Pet Name', Icons.pets, _nameController, 
-                                        validator: _validateRequired),
-                                    SizedBox(height: 20),
-                                    
-                                    // Breed & Age in a row
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          flex: 2,
-                                          child: _buildBreedField(), // 替换原来的 _buildTextField
-                                        ),
-                                        SizedBox(width: 16),
-                                        Expanded(
-                                          flex: 1,
-                                          child: _buildTextField('Age', Icons.cake, _ageController,
-                                              keyboardType: TextInputType.number,
-                                              validator: _validateAge),
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 20),
-                                    
-                                    // Notes
-                                    _buildTextField('Notes (optional)', Icons.notes, _notesController,
-                                        maxLines: 3),
-                                    SizedBox(height: 28),
-                                    
-                                    // Save Button
-                                    ElevatedButton(
-                                      onPressed: _isLoading ? null : _savePet,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: AppColors.accent.withOpacity(0.7),
-                                        foregroundColor: Colors.white,
-                                        padding: EdgeInsets.symmetric(vertical: 16),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        elevation: 4,
-                                      ),
-                                      child: Text(
-                                        isEditing ? 'Update Info' : 'Add to Family',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          )
+                          _buildFormCard(),
                         ],
                       ),
                     ),
@@ -466,7 +381,7 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: AppColors.textPrimary.withOpacity(0.1),
             blurRadius: 10,
             offset: Offset(0, 4),
           ),
@@ -507,6 +422,74 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
     );
   }
 
+  Widget _buildFormCard() {
+    return Container(
+      constraints: BoxConstraints(maxWidth: 500),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Color(0xFFA78B6D), width: 2.0),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              blurRadius: 8,
+              spreadRadius: 1,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildImagePicker(),
+              SizedBox(height: 20),
+              _buildTextField('Pet Name', Icons.pets, _nameController, validator: _validateRequired),
+              SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(flex: 2, child: _buildBreedField()),
+                  SizedBox(width: 16),
+                  Expanded(
+                    flex: 1,
+                    child: _buildTextField(
+                      'Age', 
+                      Icons.cake, 
+                      _ageController,
+                      keyboardType: TextInputType.number,
+                      validator: _validateAge,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+              _buildTextField('Notes (optional)', Icons.notes, _notesController, maxLines: 3),
+              SizedBox(height: 28),
+              ElevatedButton(
+                onPressed: _isLoading ? null : _savePet,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accent.withOpacity(0.7),
+                  foregroundColor: AppColors.background,
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 4,
+                ),
+                child: Text(
+                  widget.pet != null ? 'Update Info' : 'Add to Family',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildImagePicker() {
     return Column(
       children: [
@@ -524,21 +507,15 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
         SizedBox(height: 8),
         Text(
           'Tap to add/change photo',
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 12,
-          ),
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
         ),
       ],
     );
   }
 
   ImageProvider? _getImage() {
-    if (_selectedImage != null) {
-      return FileImage(_selectedImage!);
-    } else if (widget.pet?.imageUrl != null) {
-      return NetworkImage(widget.pet!.imageUrl!);
-    }
+    if (_selectedImage != null) return FileImage(_selectedImage!);
+    if (widget.pet?.imageUrl != null) return NetworkImage(widget.pet!.imageUrl!);
     return null;
   }
 
@@ -552,18 +529,18 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
       keyboardType: keyboardType,
       maxLines: maxLines,
       validator: validator,
-      style: TextStyle(color: Colors.black87),
+      style: TextStyle(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(color: Colors.black54),
+        labelStyle: TextStyle(color: AppColors.textPrimary),
         prefixIcon: Icon(icon, color: AppColors.primary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: AppColors.textPrimary),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: AppColors.textPrimary),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -572,30 +549,21 @@ class _AddEditPetScreenState extends State<AddEditPetScreen> {
         filled: true,
         fillColor: Colors.grey.shade50,
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        errorStyle: TextStyle(
-          fontSize: 12,
-          height: 1.2,
-        ),
+        errorStyle: TextStyle(fontSize: 12, height: 1.2),
         errorMaxLines: 2,
       ),
     );
   }
   
   String? _validateRequired(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'This field is required';
-    }
+    if (value == null || value.isEmpty) return 'This field is required';
     return null;
   }
 
   String? _validateAge(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Required';
-    }
+    if (value == null || value.isEmpty) return 'Required';
     final age = int.tryParse(value);
-    if (age == null || age <= 0 || age > 30) {
-      return 'Invalid age (1-30)';
-    }
+    if (age == null || age <= 0 || age > 30) return 'Invalid age (1-30)';
     return null;
   }
 }

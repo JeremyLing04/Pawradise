@@ -1,19 +1,14 @@
+//screens/map/map_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+import 'package:pawradise/screens/community/create_post_screen.dart';
+import 'package:pawradise/constants.dart';
 import '../../models/location_model.dart';
-import 'package:permission_handler/permission_handler.dart'as permission_handler;
-import 'package:permission_handler/permission_handler.dart';
+import 'package:permission_handler/permission_handler.dart' as permission_handler;
 import '../../models/places_service.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-// REMEMBER DELETE THIS AFTER MODIFY THE SHARE FUNCTION
 import 'share_screen.dart';
-
-
-
-
-
 
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);
@@ -25,74 +20,45 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   late GoogleMapController mapController;
   final Location _location = Location();
-
-  LatLng _initialPosition = const LatLng(
-    3.1390,
-    101.6869,
-  ); // Default: Kuala Lumpur
+  LatLng _initialPosition = const LatLng(3.1390, 101.6869); // Kuala Lumpur
   List<LocationModel> nearbyLocations = [];
-  bool _isListExpanded = true; // Flag to track list expansion
-  BitmapDescriptor? customMarker; // Custom marker
+  bool _isListExpanded = true;
+  BitmapDescriptor? customMarker;
 
   @override
   void initState() {
     super.initState();
-    _loadMarker(); // Load the custom marker color
-    requestLocationPermission(); // Request location permission when app starts
+    _loadMarker();
+    requestLocationPermission();
   }
 
-  // Load the custom marker color directly without using then
   Future<void> _loadMarker() async {
-    customMarker = BitmapDescriptor.defaultMarkerWithHue(
-      BitmapDescriptor.hueAzure,
-    );
-    setState(() {
-      // Marker is now ready
-    });
+    customMarker = BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure);
+    setState(() {});
   }
 
-  // Request location permission at runtime
   void requestLocationPermission() async {
-    permission_handler.PermissionStatus status = await permission_handler
-        .Permission
-        .location
-        .request();
+    permission_handler.PermissionStatus status = await permission_handler.Permission.location.request();
 
     if (status.isGranted) {
-      _setCurrentLocation(); // Permissions granted, now fetch current location
+      _setCurrentLocation();
     } else if (status.isDenied) {
-      // Show SnackBar if permission is denied
-      _showSnackBar(
-        'Location permission denied. Please grant it to use this feature.',
-      );
+      _showSnackBar('Location permission denied. Please grant it.');
     } else if (status.isPermanentlyDenied) {
-      // Show AlertDialog if permission is permanently denied
       _showAlertDialog();
     }
   }
 
-  // Fetch the current location of the user
   void _setCurrentLocation() async {
     try {
       final userLocation = await _location.getLocation();
       setState(() {
-        _initialPosition = LatLng(
-          userLocation.latitude!,
-          userLocation.longitude!,
-        ); // Update initial position
+        _initialPosition = LatLng(userLocation.latitude!, userLocation.longitude!);
       });
-
-      // Move the camera to the user's current location
-      mapController.animateCamera(
-        CameraUpdate.newLatLngZoom(_initialPosition, 14),
-      );
-
-      // Fetch pet-friendly places from Google Places API
+      mapController.animateCamera(CameraUpdate.newLatLngZoom(_initialPosition, 14));
       final places = await PlacesService.fetchPetFriendlyPlaces(
-        userLocation.latitude!,
-        userLocation.longitude!,
+        userLocation.latitude!, userLocation.longitude!,
       );
-      print(places); // Debug print to check the fetched data
       setState(() {
         nearbyLocations = places.map<LocationModel>((place) {
           return LocationModel(
@@ -111,43 +77,26 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  // Show SnackBar with a message
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), duration: Duration(seconds: 3)),
     );
   }
 
-  // Show an AlertDialog when permission is permanently denied
   void _showAlertDialog() {
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Location Permission Denied'),
-          content: Text(
-            'Please enable location permissions in the app settings.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
-              },
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                openAppSettings(); // Open app settings to allow permission
-              },
-              child: Text('Go to Settings'),
-            ),
-          ],
-        );
-      },
+      builder: (context) => AlertDialog(
+        title: Text('Location Permission Denied'),
+        content: Text('Please enable location permissions in app settings.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: Text('Cancel')),
+          TextButton(onPressed: () => permission_handler.openAppSettings(), child: Text('Go to Settings')),
+        ],
+      ),
     );
   }
 
-  // Create markers for each nearby location
   Set<Marker> _getMarkers() {
     return nearbyLocations.map((location) {
       return Marker(
@@ -157,75 +106,51 @@ class _MapScreenState extends State<MapScreen> {
           title: location.name,
           snippet: "${location.rating} ⭐ - ${location.category}",
         ),
-        icon:
-            customMarker ??
-            BitmapDescriptor.defaultMarkerWithHue(
-              BitmapDescriptor.hueAzure,
-            ), // Use custom marker or default
+        icon: customMarker ?? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
       );
     }).toSet();
   }
 
-  // Widget to display the list of nearby locations
   Widget _buildNearbyLocationList() {
     return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
       itemCount: nearbyLocations.length,
       itemBuilder: (context, index) {
         final location = nearbyLocations[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+          decoration: BoxDecoration(
+            color: AppColors.secondary.withOpacity(0.8), 
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.accent, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 6,
+                offset: Offset(2, 3),
+              ),
+            ],
           ),
-          elevation: 5, // Adding shadow for better visibility
-          color: Color.fromRGBO(236, 185, 44, 1),
           child: ListTile(
-            contentPadding: const EdgeInsets.all(
-              12.0,
-            ), // Padding inside each card
-            leading: Icon(
-              Icons.pets,
-              color: const Color.fromARGB(255, 97, 72, 3),
-              size: 40,
-            ), // Add pet-friendly icon
-            title: Text(
-              location.name,
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-            ),
-            subtitle: Text(
-              '${location.category} - ${location.rating} ⭐',
-              style: TextStyle(fontSize: 14),
-            ),
-            onTap: () {
-              // When a list item is tapped, move the map's camera to the location
-              _moveCameraToLocation(location);
-            },
+            contentPadding: const EdgeInsets.all(12),
+            leading: Icon(Icons.pets, size: 40, color: AppColors.accent),
+            title: Text(location.name, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            subtitle: Text('${location.category} - ${location.rating} ⭐', style: TextStyle(fontSize: 14)),
+            onTap: () => _moveCameraToLocation(location),
             trailing: Row(
-              mainAxisSize:
-                  MainAxisSize.min, // Ensure buttons stay next to each other
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Preview Button (Modified to open Google Maps place details)
                 IconButton(
-                  icon: Icon(Icons.info_outline),
-                  onPressed: () {
-                    _showPlaceDetails(
-                      location,
-                    ); // Open Google Maps place details
-                  },
+                  icon: Icon(Icons.info_outline, color: AppColors.accent),
+                  onPressed: () => _showPlaceDetails(location),
                 ),
-                // Directions Button
                 IconButton(
-                  icon: Icon(Icons.directions),
-                  onPressed: () {
-                    _showDirections(location); // Call the directions function
-                  },
+                  icon: Icon(Icons.directions, color: AppColors.accent),
+                  onPressed: () => _showDirections(location),
                 ),
-                // Share Button
                 IconButton(
-                  icon: Icon(Icons.share),
-                  onPressed: () {
-                    _shareLocation(location); // Call the share function
-                  },
+                  icon: Icon(Icons.share, color: AppColors.accent),
+                  onPressed: () => _shareLocation(location),
                 ),
               ],
             ),
@@ -235,108 +160,93 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  // Move camera to the selected location when a list item is tapped
   void _moveCameraToLocation(LocationModel location) {
-    mapController.animateCamera(
-      CameraUpdate.newLatLngZoom(
-        LatLng(location.latitude, location.longitude),
-        20,
-      ),
-    );
+    mapController.animateCamera(CameraUpdate.newLatLngZoom(LatLng(location.latitude, location.longitude), 20));
   }
 
-  // Show the Google Maps place details page when Preview button is clicked
   void _showPlaceDetails(LocationModel location) async {
-    // Correct URL format for opening Google Maps with place_id
     final googleMapsUrl = 'https://www.google.com/maps/?q=${location.name}';
-    ;
-
-    // Check if the URL can be launched
     if (await canLaunch(googleMapsUrl)) {
-      // Open the URL to the Google Maps place details page
       await launch(googleMapsUrl);
     } else {
-      // Handle the case where the URL cannot be launched
       throw 'Could not launch $googleMapsUrl';
     }
   }
 
   void _showDirections(LocationModel location) async {
-    final url =
-        'https://www.google.com/maps/dir/?api=1&destination=${location.latitude},${location.longitude}';
-
-    // Check if the URL can be launched
-    if (await canLaunch(url)) {
-      // Launch the URL to open Google Maps with directions
-      await launch(url);
-    } else {
-      // Handle the case where the URL cannot be launched
-      throw 'Could not launch $url';
-    }
+    final url = 'https://www.google.com/maps/dir/?api=1&destination=${location.latitude},${location.longitude}';
+    if (await canLaunch(url)) await launch(url); else throw 'Could not launch $url';
   }
 
-  // Share the location's information and navigate to the new screen
   void _shareLocation(LocationModel location) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            ShareScreen(location: location), // Pass data to the new screen
+        builder: (context) => CreatePostScreen(sharedLocation: location),
       ),
     );
   }
 
-  // Toggle the expansion state of the list
   void _toggleListExpansion() {
-    setState(() {
-      _isListExpanded = !_isListExpanded;
-    });
+    setState(() => _isListExpanded = !_isListExpanded);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dog-Friendly Map'),
-        backgroundColor: Color.fromARGB(255, 243, 199, 79),
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: AppColors.accent.withOpacity(0.5), 
+    appBar: AppBar(
+      title: Text(
+        'Dog-Friendly Map',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 22,
+          color: AppColors.background, 
+        ),
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: GoogleMap(
-              onMapCreated: (controller) => mapController = controller,
-              initialCameraPosition: CameraPosition(
-                target: _initialPosition,
-                zoom: 14,
+      centerTitle: true, 
+      backgroundColor: AppColors.primary, 
+      elevation: 4,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
+      ),
+    ),
+    body: Column(
+      children: [
+        Expanded(
+          child: Container(
+            margin: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8, offset: Offset(0, 4))],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: GoogleMap(
+                onMapCreated: (controller) => mapController = controller,
+                initialCameraPosition: CameraPosition(target: _initialPosition, zoom: 14),
+                myLocationEnabled: true,
+                myLocationButtonEnabled: true,
+                markers: _getMarkers(),
               ),
-              myLocationEnabled: true, // Show the user's location as a blue dot
-              myLocationButtonEnabled: true, // Show the "My Location" button
-              markers: _getMarkers(), // Show only nearby places as markers
             ),
           ),
-          IconButton(
-            icon: Icon(
-              _isListExpanded
-                  ? Icons.expand_more
-                  : Icons.expand_less, // Reversed behavior
-              color: Color.fromARGB(
-                255,
-                78,
-                53,
-                36,
-              ), // Light brown color for the arrow
-            ),
-            onPressed: _toggleListExpansion,
+        ),
+        IconButton(
+          icon: Icon(
+            _isListExpanded ? Icons.expand_more : Icons.expand_less,
+            color: AppColors.accent,
+            size: 30,
           ),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            height: _isListExpanded
-                ? 400 // The height when expanded
-                : 0, // The height when collapsed
-            child: _buildNearbyLocationList(),
-          ),
-        ],
-      ),
-    );
-  }
+          onPressed: _toggleListExpansion,
+        ),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          height: _isListExpanded ? 400 : 0,
+          child: _buildNearbyLocationList(),
+        ),
+      ],
+    ),
+  );
+}
 }

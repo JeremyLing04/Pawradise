@@ -7,7 +7,7 @@ class ChatMessage {
   final String message;
   final bool isUser;
   final DateTime timestamp;
-  final String? response; // AI回复的内容
+  final String? response; 
 
   ChatMessage({
     required this.id,

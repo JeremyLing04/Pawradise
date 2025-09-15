@@ -1,7 +1,8 @@
+// screens/auth/register.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../constants.dart';
-import '../../services/auth_service.dart'; 
+import '../../services/auth_service.dart';
 
 class Register extends StatefulWidget {
   const Register({super.key});
@@ -21,40 +22,32 @@ class _RegisterState extends State<Register> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
+  // Registration method
   void _register() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
     try {
-      print('📋 Form data:');
-      print('📋 Username: ${_usernameController.text}');
-      print('📋 Email: ${_emailController.text}');
-      print('📋 Password: ${_passwordController.text}');
+      print('📋 Form data: Username=${_usernameController.text}, Email=${_emailController.text}');
       
       final user = await _authService.signUp(
         _emailController.text.trim(),
         _passwordController.text.trim(),
         _usernameController.text.trim(),
+        _usernameController.text.trim(), // Reusing username for full name if needed
       );
 
       setState(() => _isLoading = false);
 
-      if (user != null) {
-        _showSuccessAndNavigate();
-      }
+      if (user != null) _showSuccessAndNavigate();
     } catch (e) {
       setState(() => _isLoading = false);
       print('REGISTRATION ERROR: $e');
-      print('ERROR TYPE: ${e.runtimeType}');
-      
-      // 专门处理 Firebase 插件的已知 bug
+
       if (_isFirebasePigeonBug(e)) {
         _handlePigeonBug();
       } else {
-        // 显示原始错误信息（其他正常错误）
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString()),
@@ -67,28 +60,22 @@ class _RegisterState extends State<Register> {
 
   bool _isFirebasePigeonBug(dynamic error) {
     final errorString = error.toString();
-    return errorString.contains("List<Object?>") && 
-          errorString.contains("PigeonUserDetails");
+    return errorString.contains("List<Object?>") && errorString.contains("PigeonUserDetails");
   }
 
-  // 处理 Firebase 插件 bug - 使用正确的 Future.delayed
   void _handlePigeonBug() async {
     print('Handling known Firebase plugin bug...');
-    
-    // 正确的用法：Future.delayed
     await Future.delayed(Duration(seconds: 2));
     
     try {
       final currentUser = FirebaseAuth.instance.currentUser;
-      
       if (currentUser != null && currentUser.email == _emailController.text.trim()) {
         print('User was actually created successfully: ${currentUser.uid}');
         _showSuccessAndNavigate();
       } else {
         _showRetryPrompt();
       }
-    } catch (checkError) {
-      print('Error checking user status: $checkError');
+    } catch (_) {
       _showRetryPrompt();
     }
   }
@@ -111,10 +98,7 @@ class _RegisterState extends State<Register> {
         title: Text('Registration Status'),
         content: Text('Your account may have been created. Please try logging in.'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('OK'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text('OK')),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
@@ -130,12 +114,12 @@ class _RegisterState extends State<Register> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true, 
+      resizeToAvoidBottomInset: true,
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Stack(
           children: [
-            // 背景层
+            // Background
             Container(
               decoration: BoxDecoration(
                 image: DecorationImage(
@@ -148,8 +132,7 @@ class _RegisterState extends State<Register> {
                 ),
               ),
             ),
-
-            // 返回按钮层 - 固定在左上角
+            // Back button
             SafeArea(
               child: Align(
                 alignment: Alignment.topLeft,
@@ -159,8 +142,7 @@ class _RegisterState extends State<Register> {
                 ),
               ),
             ),
-
-            // 主要内容层 - 居中显示
+            // Main content
             SafeArea(
               child: Center(
                 child: SingleChildScrollView(
@@ -169,9 +151,7 @@ class _RegisterState extends State<Register> {
                     constraints: BoxConstraints(maxWidth: 400),
                     child: Card(
                       elevation: 8,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       child: Padding(
                         padding: EdgeInsets.all(24),
                         child: Form(
@@ -179,32 +159,14 @@ class _RegisterState extends State<Register> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // Logo or icon
-                              Icon(
-                                Icons.pets,
-                                size: 50,
-                                color: AppColors.primary,
-                              ),
+                              Icon(Icons.pets, size: 50, color: AppColors.primary),
                               SizedBox(height: 16),
-                              
-                              Text(
-                                'Create Account',
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.accent,
-                                ),
-                              ),
+                              Text('Create Account', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.accent)),
                               SizedBox(height: 8),
-                              Text(
-                                'Join the Pawradise community',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
+                              Text('Join the Pawradise community', style: TextStyle(color: AppColors.textSecondary)),
                               SizedBox(height: 24),
                               
-                              // 用户名输入框
+                              // Username
                               TextFormField(
                                 controller: _usernameController,
                                 decoration: InputDecoration(
@@ -213,25 +175,17 @@ class _RegisterState extends State<Register> {
                                   labelStyle: TextStyle(color: AppColors.accent),
                                   filled: true,
                                   fillColor: AppColors.secondary.withAlpha(40),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
-                                  ),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                                 ),
-                                keyboardType: TextInputType.text,
                                 validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter a username';
-                                  }
-                                  if (value.length < 3) {
-                                    return 'Username must be at least 3 characters';
-                                  }
+                                  if (value == null || value.isEmpty) return 'Please enter a username';
+                                  if (value.length < 3) return 'Username must be at least 3 characters';
                                   return null;
                                 },
                               ),
                               SizedBox(height: 16),
-                              
-                              // 邮箱输入框
+
+                              // Email
                               TextFormField(
                                 controller: _emailController,
                                 decoration: InputDecoration(
@@ -240,90 +194,65 @@ class _RegisterState extends State<Register> {
                                   labelStyle: TextStyle(color: AppColors.accent),
                                   filled: true,
                                   fillColor: AppColors.secondary.withAlpha(40),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
-                                  ),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                                 ),
                                 keyboardType: TextInputType.emailAddress,
                                 validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter your email';
-                                  }
-                                  if (!value.contains('@')) {
-                                    return 'Please enter a valid email';
-                                  }
+                                  if (value == null || value.isEmpty) return 'Please enter your email';
+                                  if (!value.contains('@')) return 'Please enter a valid email';
                                   return null;
                                 },
                               ),
                               SizedBox(height: 16),
-                              
-                              // 密码输入框
+
+                              // Password
                               TextFormField(
                                 controller: _passwordController,
                                 decoration: InputDecoration(
                                   labelText: 'Password',
                                   prefixIcon: Icon(Icons.lock, color: AppColors.primary),
                                   suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                                      color: AppColors.primary,
-                                    ),
+                                    icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off, color: AppColors.primary),
                                     onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                                   ),
                                   labelStyle: TextStyle(color: AppColors.accent),
                                   filled: true,
                                   fillColor: AppColors.secondary.withAlpha(40),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
-                                  ),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                                 ),
                                 obscureText: _obscurePassword,
                                 validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter a password';
-                                  }
-                                  if (value.length < 6) {
-                                    return 'Password must be at least 6 characters';
-                                  }
+                                  if (value == null || value.isEmpty) return 'Please enter a password';
+                                  if (value.length < 6) return 'Password must be at least 6 characters';
                                   return null;
                                 },
                               ),
                               SizedBox(height: 16),
-                              
-                              // 确认密码输入框
+
+                              // Confirm Password
                               TextFormField(
                                 controller: _confirmPasswordController,
                                 decoration: InputDecoration(
                                   labelText: 'Confirm Password',
                                   prefixIcon: Icon(Icons.lock_outline, color: AppColors.primary),
                                   suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
-                                      color: AppColors.primary,
-                                    ),
+                                    icon: Icon(_obscureConfirmPassword ? Icons.visibility : Icons.visibility_off, color: AppColors.primary),
                                     onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
                                   ),
                                   labelStyle: TextStyle(color: AppColors.accent),
                                   filled: true,
                                   fillColor: AppColors.secondary.withAlpha(40),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
-                                  ),
+                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                                 ),
                                 obscureText: _obscureConfirmPassword,
                                 validator: (value) {
-                                  if (value != _passwordController.text) {
-                                    return 'Passwords do not match';
-                                  }
+                                  if (value != _passwordController.text) return 'Passwords do not match';
                                   return null;
                                 },
                               ),
                               SizedBox(height: 24),
-                              
-                              // 注册按钮
+
+                              // Register button
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
@@ -332,41 +261,23 @@ class _RegisterState extends State<Register> {
                                     backgroundColor: AppColors.primary,
                                     foregroundColor: Colors.white,
                                     padding: EdgeInsets.symmetric(vertical: 16),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   ),
-                                  child: _isLoading 
-                                      ? SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                          ),
-                                        )
+                                  child: _isLoading
+                                      ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
                                       : Text('Create Account', style: TextStyle(fontSize: 16)),
                                 ),
                               ),
                               SizedBox(height: 16),
-                              
-                              // 登录链接
+
+                              // Login link
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(
-                                    "Already have an account? ",
-                                    style: TextStyle(color: AppColors.textSecondary),
-                                  ),
+                                  Text("Already have an account? ", style: TextStyle(color: AppColors.textSecondary)),
                                   GestureDetector(
                                     onTap: _isLoading ? null : () => Navigator.pop(context),
-                                    child: Text(
-                                      "Sign In",
-                                      style: TextStyle(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
+                                    child: Text("Sign In", style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                                   ),
                                 ],
                               ),
@@ -383,5 +294,14 @@ class _RegisterState extends State<Register> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _usernameController.dispose();
+    super.dispose();
   }
 }

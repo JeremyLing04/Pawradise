@@ -16,7 +16,6 @@ class EventProvider with ChangeNotifier {
 
   static final List<int> notificationTimeOptions = [0, 5, 10, 15, 30, 60, 120];
 
-  // 初始化时加载 Firestore 数据
   Future<void> initialize(String userId) async {
     await _notificationService.requestPermissions();
     await loadEvents(userId);
@@ -36,20 +35,13 @@ class EventProvider with ChangeNotifier {
         Duration(minutes: event.notificationMinutes),
       );
 
-      await _notificationService.scheduleNotification(
-        id: event.id.hashCode,
-        title: 'Reminder: ${event.title}',
-        body: event.description ?? 'Time for ${event.type.displayName}',
-        scheduledTime: notificationTime,
-      );
-    }
-    // 分享到社区
-    if (shareToCommunity) {
-      await _communityService.shareEventToCommunity(event);
-    }
+      if (shareToCommunity) {
+        await _communityService.shareEventToCommunity(event);
+      }
 
-    _events.add(event);
-    notifyListeners();
+      _events.add(event);
+      notifyListeners();
+    }
   }
 
   Future<void> updateEvent(Event event) async {
@@ -108,7 +100,6 @@ class EventProvider with ChangeNotifier {
     return '${minutes ~/ 60} hours ${minutes % 60} minutes early';
   }
 
-  // 在 EventProvider 中添加加载加入事件的方法
   Future<void> loadJoinedEvents(String userId) async {
     try {
       final snapshot = await FirebaseFirestore.instance
@@ -122,7 +113,6 @@ class EventProvider with ChangeNotifier {
         return Event.fromMap(data);
       }).toList();
 
-      // 将加入的事件合并到主事件列表中
       _events.addAll(joinedEvents);
       notifyListeners();
     } catch (e) {

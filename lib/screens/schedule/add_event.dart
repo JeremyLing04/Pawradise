@@ -16,7 +16,7 @@ class AddEventDialog extends StatefulWidget {
 }
 
 class _AddEventDialogState extends State<AddEventDialog> {
-  final _formKey = GlobalKey<FormState>(); //validate input
+  final _formKey = GlobalKey<FormState>(); // form validation
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   DateTime _selectedTime = DateTime.now();
@@ -24,7 +24,6 @@ class _AddEventDialogState extends State<AddEventDialog> {
   int _notificationMinutes = 30;
   bool _shareToCommunity = false;
 
-  //initialize
   @override
   void initState() {
     super.initState();
@@ -34,67 +33,126 @@ class _AddEventDialogState extends State<AddEventDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Add New Event'),
+      backgroundColor: AppColors.secondary,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(25),
+        side: BorderSide(color: AppColors.accent, width: 2),
+      ),
+      title: Center(
+        child: Text(
+          'Add New Event',
+          style: TextStyle(
+            color: AppColors.accent,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              //title
+              // Event title input
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter a title';
-                  }
-                  return null;
-                },
+                style: TextStyle(color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Title',
+                  labelStyle: TextStyle(color: AppColors.textSecondary),
+                  filled: true,
+                  fillColor: AppColors.background.withOpacity(0.5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent),
+                  ),
+                ),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Please enter a title' : null,
               ),
+              const SizedBox(height: 12),
 
-              //description
+              // Event description input
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
                 maxLines: 3,
+                style: TextStyle(color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Description',
+                  labelStyle: TextStyle(color: AppColors.textSecondary),
+                  filled: true,
+                  fillColor: AppColors.background.withOpacity(0.5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent),
+                  ),
+                ),
               ),
+              const SizedBox(height: 12),
 
-              //event type
+              // Event type dropdown
               DropdownButtonFormField<EventType>(
                 value: _selectedType,
+                dropdownColor: AppColors.primary,
+                style: TextStyle(color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Event Type',
+                  labelStyle: TextStyle(color: AppColors.textSecondary),
+                  filled: true,
+                  fillColor: AppColors.background.withOpacity(0.5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent),
+                  ),
+                ),
                 items: EventType.values.map((type) {
                   return DropdownMenuItem(
                     value: type,
                     child: Text(type.displayName),
                   );
                 }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedType = value!;
-                  });
-                },
-                decoration: const InputDecoration(labelText: 'Event Type'),
+                onChanged: (value) => setState(() => _selectedType = value!),
               ),
+              const SizedBox(height: 12),
 
-              //date & time choose
+              // Date & time picker
               ListTile(
+                tileColor: AppColors.background.withOpacity(0.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: AppColors.accent),
+                ),
                 title: Text(
                   'Date: ${DateFormat('MMM d, yyyy').format(widget.selectedDate)}',
+                  style: TextStyle(color: AppColors.textPrimary),
                 ),
                 subtitle: Text(
                   'Time: ${DateFormat('hh:mm a').format(_selectedTime)}',
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
-                trailing: const Icon(Icons.edit),
+                trailing: Icon(Icons.edit, color: AppColors.accent),
                 onTap: () => _selectTime(context),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-              //notification min
+              // Reminder time dropdown
               Consumer<EventProvider>(
                 builder: (context, eventProvider, child) {
                   return DropdownButtonFormField<int>(
                     value: _notificationMinutes,
+                    dropdownColor: AppColors.primary,
+                    style: TextStyle(color: AppColors.textPrimary),
+                    decoration: InputDecoration(
+                      labelText: 'Reminder Time',
+                      labelStyle: TextStyle(color: AppColors.textSecondary),
+                      filled: true,
+                      fillColor: AppColors.background.withOpacity(0.5),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppColors.accent),
+                      ),
+                    ),
                     items: EventProvider.notificationTimeOptions.map((minutes) {
                       return DropdownMenuItem(
                         value: minutes,
@@ -103,47 +161,63 @@ class _AddEventDialogState extends State<AddEventDialog> {
                         ),
                       );
                     }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _notificationMinutes = value!;
-                      });
-                    },
-                    decoration: const InputDecoration(
-                      labelText: 'Reminder Time',
-                    ),
+                    onChanged: (value) =>
+                        setState(() => _notificationMinutes = value!),
                   );
                 },
               ),
+              const SizedBox(height: 12),
 
-              // 分享到社区选项
+              // Share to community switch
               SwitchListTile(
-                title: const Text('Share to Community'),
-                subtitle: const Text('Other pet owners can join your activity'),
+                title: Text(
+                  'Share to Community',
+                  style: TextStyle(color: AppColors.textPrimary),
+                ),
+                subtitle: Text(
+                  'Other pet owners can join your activity',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+                activeColor: AppColors.accent,
                 value: _shareToCommunity,
-                onChanged: (value) {
-                  setState(() {
-                    _shareToCommunity = value;
-                  });
-                },
+                onChanged: (value) =>
+                    setState(() => _shareToCommunity = value),
               ),
             ],
           ),
         ),
       ),
+      actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
+        // Cancel button
         ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: AppColors.accent),
+            ),
+          ),
+          onPressed: () => Navigator.pop(context),
+          child: Text('Cancel', style: TextStyle(color: AppColors.accent)),
+        ),
+
+        // Save button
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.accent.withOpacity(0.7),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
           onPressed: () => _saveEvent(context),
-          child: const Text('Save'),
+          child: const Text('Save', style: TextStyle(color: Colors.white)),
         ),
       ],
     );
   }
 
-  //event time
+  // Time picker for event
   Future<void> _selectTime(BuildContext context) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
@@ -163,7 +237,7 @@ class _AddEventDialogState extends State<AddEventDialog> {
     }
   }
 
-  // save event
+  // Save event to Firestore via provider
   void _saveEvent(BuildContext context) {
     if (_formKey.currentState!.validate()) {
       final userId = FirebaseAuth.instance.currentUser!.uid;
@@ -184,13 +258,12 @@ class _AddEventDialogState extends State<AddEventDialog> {
         sharedToCommunity: _shareToCommunity,
       );
 
-      // add event 到 Firestore
+      // Add event through provider
       Provider.of<EventProvider>(
         context,
         listen: false,
       ).addEvent(event, shareToCommunity: _shareToCommunity);
 
-      // close dialog
       Navigator.pop(context);
     }
   }
