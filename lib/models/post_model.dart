@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:pawradise/models/location_model.dart';
 
 class PostModel {
   final String? id;
@@ -20,6 +21,9 @@ class PostModel {
   final String? eventDescription;
   final String? eventType;
 
+  // 新增位置字段
+  final Map<String, dynamic>? location;
+
   PostModel({
     this.id,
     required this.authorId,
@@ -37,6 +41,7 @@ class PostModel {
     this.eventTime,
     this.eventDescription,
     this.eventType,
+    this.location, // 新增位置参数
   });
 
   factory PostModel.fromFireStore(DocumentSnapshot doc) {
@@ -58,6 +63,7 @@ class PostModel {
       eventTime: data['eventTime'] != null ? (data['eventTime'] as Timestamp).toDate() : null,
       eventDescription: data['eventDescription'] ?? '',
       eventType: data['eventType'] ?? 'other',
+      location: data['location'] != null ? Map<String, dynamic>.from(data['location']) : null, // 新增
     );
   }
 
@@ -97,6 +103,22 @@ class PostModel {
       'eventTime': eventTime != null ? Timestamp.fromDate(eventTime!) : null,
       'eventDescription': eventDescription,
       'eventType': eventType,
+      'location': location, // 新增
+    };
+  }
+
+  // 添加位置转换方法
+  static Map<String, dynamic>? locationFromModel(LocationModel? locationModel) {
+    if (locationModel == null) return null;
+    
+    return {
+      'id': locationModel.id,
+      'name': locationModel.name,
+      'description': locationModel.description,
+      'latitude': locationModel.latitude,
+      'longitude': locationModel.longitude,
+      'rating': locationModel.rating,
+      'category': locationModel.category,
     };
   }
 

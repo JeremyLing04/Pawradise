@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart';
+import 'package:pawradise/screens/community/create_post_screen.dart';
 import '../../models/location_model.dart';
 import 'package:permission_handler/permission_handler.dart'as permission_handler;
 import 'package:permission_handler/permission_handler.dart';
@@ -276,13 +277,12 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  // Share the location's information and navigate to the new screen
+  // 修改分享功能，导航到 CreatePostScreen 并传递位置数据
   void _shareLocation(LocationModel location) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            ShareScreen(location: location), // Pass data to the new screen
+        builder: (context) => CreatePostScreen(sharedLocation: location),
       ),
     );
   }
