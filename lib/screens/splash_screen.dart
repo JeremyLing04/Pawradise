@@ -43,7 +43,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       setState(() {
         _isAnimationCompleted = true; // Mark the animation as completed
       });
-      Navigator.pushReplacementNamed(context, '/dashboard');
+      Navigator.pushReplacementNamed(context, '/');
     });
 
     // Start the animation when the splash screen is displayed
