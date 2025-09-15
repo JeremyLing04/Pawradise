@@ -40,7 +40,7 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: 'Pawradise',
             theme: AppTheme.theme,
-            initialRoute: '/dashboard',
+            initialRoute: '/splash',
             routes: {
               '/splash': (context) => SplashScreen(),
               '/': (context) => const Login(),
