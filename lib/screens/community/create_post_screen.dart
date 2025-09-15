@@ -4,7 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../models/post_model.dart'; // 导入 PostModel
+import '../../models/post_model.dart';
+import '../../constants.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
@@ -33,10 +34,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('New Post'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
+      backgroundColor: AppColors.secondary,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+          child: AppBar(
+            title: const Text(
+              'New Post',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            centerTitle: true,
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.background,
+            elevation: 2,
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -47,9 +60,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               // 帖子类型选择
               DropdownButtonFormField<String>(
                 value: _selectedType,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Post Category',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.background.withOpacity(0.5),
                 ),
                 items: _postTypes.map((type) {
                   return DropdownMenuItem<String>(
@@ -61,45 +83,59 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ),
               const SizedBox(height: 16),
 
-              // 图片上传部分
+              // 图片上传
               _buildImageSection(),
               const SizedBox(height: 16),
 
-              // 标题输入
+              // 标题
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Title',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.background.withOpacity(0.5),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please input title';
-                  }
+                  if (value == null || value.isEmpty) return 'Please input title';
                   return null;
                 },
               ),
               const SizedBox(height: 16),
 
-              // 内容输入
+              // 内容
               TextFormField(
                 controller: _contentController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Content',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.background.withOpacity(0.5),
                   alignLabelWithHint: true,
                 ),
                 maxLines: 5,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please input content';
-                  }
+                  if (value == null || value.isEmpty) return 'Please input content';
                   return null;
                 },
               ),
               const SizedBox(height: 16),
 
-              // 关键词部分
+              // 关键词
               _buildKeywordsSection(),
               const SizedBox(height: 24),
 
@@ -110,11 +146,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _createPost,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.accent.withOpacity(0.9),
+                    foregroundColor: AppColors.background,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? CircularProgressIndicator(color: AppColors.background)
                       : const Text('Create Post'),
                 ),
               ),
@@ -129,17 +166,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 标题
         const Text(
           'Keywords',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
-        
-        // 关键词输入和添加按钮
         Row(
           children: [
             Expanded(
@@ -147,9 +178,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 controller: _keywordController,
                 decoration: InputDecoration(
                   hintText: 'Add keyword...',
-                  border: const OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.background.withOpacity(0.5),
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.add, color: Colors.green),
+                    icon: Icon(Icons.add, color: AppColors.accent),
                     onPressed: _addKeyword,
                   ),
                 ),
@@ -160,11 +200,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ElevatedButton(
               onPressed: _addKeyword,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                backgroundColor: AppColors.accent.withOpacity(0.9),
+                foregroundColor: AppColors.background,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               ),
               child: const Text('Add'),
@@ -172,8 +210,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        
-        // 已添加的关键词标签
         if (_keywords.isNotEmpty)
           Wrap(
             spacing: 8,
@@ -181,25 +217,23 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             children: _keywords.map((keyword) {
               return Chip(
                 label: Text(keyword),
-                backgroundColor: Colors.green[50],
+                backgroundColor: AppColors.accent.withOpacity(0.1),
                 deleteIcon: const Icon(Icons.close, size: 16),
                 onDeleted: () => _removeKeyword(keyword),
-                labelStyle: const TextStyle(color: Colors.green),
+                labelStyle: TextStyle(color: AppColors.accent),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Colors.green[300]!),
+                  side: BorderSide(color: AppColors.accent.withOpacity(0.5)),
                 ),
               );
             }).toList(),
           ),
-        
-        // 提示文本
         if (_keywords.isEmpty)
           Text(
             'Add keywords to help others find your post',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: AppColors.textSecondary,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -230,15 +264,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
     try {
       final user = FirebaseAuth.instance.currentUser!;
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
 
       String imageUrl = '';
       bool hasImage = false;
 
-      // 如果有选择图片，先上传图片
       if (_selectedImage != null) {
         setState(() => _isUploadingImage = true);
         imageUrl = await _uploadImage(_selectedImage!);
@@ -246,14 +276,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         setState(() => _isUploadingImage = false);
       }
 
-      // 生成自动关键词 + 用户手动添加的关键词
-      final autoKeywords = PostModel.generateKeywords(
-        _titleController.text, 
-        _contentController.text
-      );
+      final autoKeywords = PostModel.generateKeywords(_titleController.text, _contentController.text);
       final allKeywords = {...autoKeywords, ..._keywords}.toList();
 
-      // 使用 PostModel 创建帖子对象
       final newPost = PostModel(
         authorId: user.uid,
         authorName: userDoc['username'],
@@ -266,19 +291,13 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
         createdAt: Timestamp.now(),
         hasImage: hasImage,
         imageUrl: imageUrl,
-        keywords: allKeywords, // 包含自动生成和手动添加的关键词
+        keywords: allKeywords,
       );
 
-      // 保存到 Firestore
-      await FirebaseFirestore.instance
-          .collection('posts')
-          .add(newPost.toMap());
-
+      await FirebaseFirestore.instance.collection('posts').add(newPost.toMap());
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Post Failed: $e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Post Failed: $e')));
     } finally {
       setState(() {
         _isLoading = false;
@@ -320,7 +339,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     backgroundColor: Colors.black54,
                     child: IconButton(
                       onPressed: () => setState(() => _selectedImage = null),
-                      icon: const Icon(Icons.close, size: 16, color: Colors.white),
+                      icon: Icon(Icons.close, size: 16, color: AppColors.background),
                     ),
                   ),
                 ),
@@ -331,11 +350,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: _pickImage,
-            icon: const Icon(Icons.camera_alt),
-            label: const Text("Select Image"),
+            icon: Icon(Icons.camera_alt, color: AppColors.accent),
+            label: Text("Select Image", style: TextStyle(color: AppColors.accent)),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              side: BorderSide(color: Colors.green),
+              side: BorderSide(color: AppColors.accent),
             ),
           ),
         ),
@@ -374,12 +393,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser!;
       final String fileName = 'posts/${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      
+
       final Reference storageRef = FirebaseStorage.instance.ref().child(fileName);
       final UploadTask uploadTask = storageRef.putFile(imageFile);
       final TaskSnapshot snapshot = await uploadTask;
       final String downloadUrl = await snapshot.ref.getDownloadURL();
-      
+
       return downloadUrl;
     } catch (e) {
       print('Upload Error: $e');

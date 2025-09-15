@@ -2,38 +2,37 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-
-// 主题切换用的 ValueNotifier
+// ValueNotifier for theme switching
 final ValueNotifier<bool> isDarkNotifier = ValueNotifier(false);
 
 class AppColors {
-  // 主色（保持亮色模式黄色，暗色模式稍柔和）
+  // Primary color (Khaki, lighter in light mode)
   static Color get primary =>
-      isDarkNotifier.value ? const Color.fromARGB(255, 214, 195, 132) : const Color.fromARGB(255, 226, 194, 107);
+      isDarkNotifier.value ? const Color(0xFFBFA67A) : const Color.fromARGB(255, 219, 188, 145);
 
-  // 次色（背景卡片等，暗色模式深一点）
+  // Secondary color (card background, darker in dark mode)
   static Color get secondary =>
-      isDarkNotifier.value ? const Color.fromARGB(255, 68, 68, 68) : const Color(0xFFF0E2B1);
+      isDarkNotifier.value ? const Color(0xFF555555) : const Color(0xFFF0E5D2);
 
-  // 强调色（暗色模式偏亮的棕色）
+  // Accent color (buttons, icons)
   static Color get accent =>
-      isDarkNotifier.value ? const Color.fromARGB(255, 255, 254, 254) : const Color(0xFF7C4B00);
+      isDarkNotifier.value ? const Color(0xFFFFF8F0) : const Color.fromARGB(255, 102, 73, 51);
 
-  // 背景色
+  // Background color
   static Color get background =>
       isDarkNotifier.value ? const Color(0xFF1C1C1C) : Colors.white;
 
-  // 文字主色
+  // Primary text color
   static Color get textPrimary =>
-      isDarkNotifier.value ? const Color.fromARGB(255, 29, 29, 29) : const Color(0xFF333333);
+      isDarkNotifier.value ? const Color(0xFFDCDCDC) : const Color(0xFF333333);
 
-  // 文字次色
+  // Secondary text color
   static Color get textSecondary =>
-      isDarkNotifier.value ? const Color.fromARGB(255, 255, 255, 255) : const Color(0xFF666666);
+      isDarkNotifier.value ? const Color(0xFFAAAAAA) : const Color(0xFF666666);
 }
 
-
 class AppTheme {
+  // Main theme
   static ThemeData get theme => ThemeData(
         primaryColor: AppColors.primary,
         scaffoldBackgroundColor: AppColors.background,
@@ -82,18 +81,26 @@ class AppTheme {
 }
 
 class AppHeader {
+  // Custom app bar
   static AppBar buildAppBar({
     required BuildContext context,
     String title = 'Pawradise',
     List<Widget>? actions,
   }) {
     return AppBar(
-      title: Text(title),
+      title: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 22,
+          color: AppColors.background,
+        ),
+      ),
       centerTitle: true,
-      foregroundColor: Colors.white, 
+      foregroundColor: AppColors.background,
       backgroundColor: Theme.of(context).primaryColor,
       leading: IconButton(
-        icon: Icon(Icons.settings, color: Colors.white),
+        icon: Icon(Icons.settings, color: AppColors.background),
         onPressed: () {
           showDialog(
             context: context,
@@ -101,12 +108,12 @@ class AppHeader {
           );
         },
       ),
+      actions: actions,
     );
   }
 }
 
-
-// 在 constants.dart 中添加
+// Bottom navigation bar items
 class AppBottomBar {
   static const List<BottomNavigationBarItem> items = [
     BottomNavigationBarItem(
@@ -132,14 +139,14 @@ class AppBottomBar {
   ];
 }
 
-//setting
+// Settings dialog
 class SettingsDialog extends StatelessWidget {
   const SettingsDialog({super.key});
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.secondary.withOpacity(0.9), // 0.0~1.0 透明度
+      backgroundColor: AppColors.secondary.withOpacity(0.9),
       title: const Text("Settings"),
       content: Column(
         mainAxisSize: MainAxisSize.min,
@@ -166,7 +173,7 @@ class SettingsDialog extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.withOpacity(0.8), // 透明一点
+                backgroundColor: Colors.red.withOpacity(0.8),
               ),
               onPressed: () async {
                 await FirebaseAuth.instance.signOut();
@@ -185,10 +192,5 @@ class SettingsDialog extends StatelessWidget {
         ),
       ],
     );
-
   }
 }
-
-
-
-

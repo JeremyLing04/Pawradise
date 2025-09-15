@@ -22,17 +22,19 @@ class ProfilePetsTab extends StatefulWidget {
 class _ProfilePetsTabState extends State<ProfilePetsTab> {
   final PetService _petService = PetService();
 
+  /// Navigate to add pet screen
   void _navigateToAddPet() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AddEditPetScreen(), 
+        builder: (context) => AddEditPetScreen(),
       ),
     ).then((_) {
-      setState(() {});
+      setState(() {}); // Refresh the list after returning
     });
   }
 
+  /// Navigate to edit pet screen
   void _navigateToEditPet(Pet pet) {
     Navigator.push(
       context,
@@ -40,19 +42,21 @@ class _ProfilePetsTabState extends State<ProfilePetsTab> {
         builder: (context) => AddEditPetScreen(pet: pet),
       ),
     ).then((_) {
-      setState(() {});
+      setState(() {}); // Refresh the list after returning
     });
   }
 
+  /// Build card for each pet
   Widget _buildPetCard(Pet pet) {
     return Container(
-      margin: EdgeInsets.only(bottom: 18),
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Card(
         elevation: 6,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: AppColors.accent, width: 2),
         ),
-        color: Colors.white,
+        color: AppColors.background,
         child: Padding(
           padding: EdgeInsets.all(16),
           child: IntrinsicHeight(
@@ -61,16 +65,18 @@ class _ProfilePetsTabState extends State<ProfilePetsTab> {
               children: [
                 _buildPetImage(pet),
                 SizedBox(width: 16),
-                
+
+                // Pet info
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // Pet name
                       Text(
                         pet.name,
                         style: TextStyle(
-                          fontSize: 17,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: AppColors.accent,
                         ),
@@ -78,6 +84,7 @@ class _ProfilePetsTabState extends State<ProfilePetsTab> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: 4),
+                      // Breed and age
                       Wrap(
                         spacing: 8,
                         runSpacing: 4,
@@ -90,7 +97,7 @@ class _ProfilePetsTabState extends State<ProfilePetsTab> {
                               Text(
                                 pet.breed,
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: 14,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
@@ -112,6 +119,7 @@ class _ProfilePetsTabState extends State<ProfilePetsTab> {
                           ),
                         ],
                       ),
+                      // Notes
                       if (pet.notes != null && pet.notes!.isNotEmpty) ...[
                         SizedBox(height: 4),
                         Text(
@@ -119,7 +127,7 @@ class _ProfilePetsTabState extends State<ProfilePetsTab> {
                           style: TextStyle(
                             fontStyle: FontStyle.italic,
                             color: AppColors.textSecondary.withAlpha(180),
-                            fontSize: 12,
+                            fontSize: 13,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -129,7 +137,8 @@ class _ProfilePetsTabState extends State<ProfilePetsTab> {
                   ),
                 ),
                 SizedBox(width: 8),
-                
+
+                // Edit button (only visible for own profile)
                 if (widget.isOwnProfile)
                   InkWell(
                     onTap: () => _navigateToEditPet(pet),
@@ -147,6 +156,7 @@ class _ProfilePetsTabState extends State<ProfilePetsTab> {
     );
   }
 
+  /// Build circular pet image or default icon
   Widget _buildPetImage(Pet pet) {
     if (pet.imageUrl != null && pet.imageUrl!.isNotEmpty) {
       return Container(
@@ -192,22 +202,24 @@ class _ProfilePetsTabState extends State<ProfilePetsTab> {
     }
   }
 
+  /// Generate a consistent color based on pet's name
   Color _getPetColor(Pet pet) {
     final colors = [
       AppColors.primary,
       AppColors.accent,
     ];
-    
     final index = pet.name.length % colors.length;
     return colors[index];
   }
 
+  /// Build empty state widget when no pets exist
   Widget _buildEmptyState() {
     return SingleChildScrollView(
       padding: EdgeInsets.all(30),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // Placeholder icon
           Container(
             width: 120,
             height: 120,
@@ -233,7 +245,7 @@ class _ProfilePetsTabState extends State<ProfilePetsTab> {
           ),
           SizedBox(height: 10),
           Text(
-            widget.isOwnProfile 
+            widget.isOwnProfile
               ? 'Your furry friends will appear here\nStart by adding your first pet!'
               : 'This user has no pets yet',
             style: TextStyle(
@@ -244,6 +256,7 @@ class _ProfilePetsTabState extends State<ProfilePetsTab> {
             textAlign: TextAlign.center,
           ),
           SizedBox(height: 40),
+          // Add first pet button for own profile
           if (widget.isOwnProfile)
             Container(
               decoration: BoxDecoration(
@@ -286,7 +299,7 @@ class _ProfilePetsTabState extends State<ProfilePetsTab> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator(color: AppColors.accent));
         }
-        
+
         if (snapshot.hasError) {
           return Center(
             child: Column(
@@ -303,17 +316,17 @@ class _ProfilePetsTabState extends State<ProfilePetsTab> {
             ),
           );
         }
-        
+
         final pets = snapshot.data ?? [];
-        
+
         if (pets.isEmpty) {
           return _buildEmptyState();
         }
-        
+
         return ListView(
           padding: EdgeInsets.only(bottom: 16),
           children: [
-            // 宠物数量信息
+            // Pet count info
             Container(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -334,16 +347,17 @@ class _ProfilePetsTabState extends State<ProfilePetsTab> {
                 textAlign: TextAlign.center,
               ),
             ),
-            
-            // 宠物列表
+
+            // Pet list
             ...pets.map((pet) => _buildPetCard(pet)).toList(),
-            
-            // 添加新宠物按钮（只有自己的资料显示）
+
+            // Add new pet button for own profile
             if (widget.isOwnProfile)
               Container(
                 margin: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(25),
+                  border: Border.all(color: AppColors.accent, width: 2),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.2),
@@ -366,7 +380,7 @@ class _ProfilePetsTabState extends State<ProfilePetsTab> {
                   icon: Icon(Icons.add, size: 20),
                   label: Text(
                     'Add New Pet',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),

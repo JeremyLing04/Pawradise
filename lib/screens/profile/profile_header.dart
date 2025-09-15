@@ -20,7 +20,7 @@ class ProfileHeader extends StatefulWidget {
   final int followersCount;
   final VoidCallback? onFollowPressed;
   final bool isFollowing;
-  final VoidCallback? onProfileUpdated; // 添加刷新回调
+  final VoidCallback? onProfileUpdated;
 
   const ProfileHeader({
     super.key,
@@ -34,7 +34,7 @@ class ProfileHeader extends StatefulWidget {
     required this.followersCount,
     this.onFollowPressed,
     this.isFollowing = false,
-    this.onProfileUpdated, // 添加刷新回调
+    this.onProfileUpdated, 
   });
 
   @override
@@ -52,26 +52,33 @@ class _ProfileHeaderState extends State<ProfileHeader> {
   @override
   void initState() {
     super.initState();
-    // 初始化时设置当前值
     _nameController.text = widget.name;
     _bioController.text = widget.userBio;
   }
 
+  /// Show edit profile dialog
   void _showEditProfileDialog() {
-    // 每次显示对话框时更新值为最新
     _nameController.text = widget.name;
     _bioController.text = widget.userBio;
 
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text('Edit Profile'),
+          return AlertDialog(
+          backgroundColor: AppColors.secondary.withOpacity(0.9), 
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(25),
+            side: BorderSide(color: AppColors.accent, width: 2),
+          ),
+          title: Text(
+            'Edit Profile',
+            style: TextStyle(color: AppColors.accent),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // 头像编辑
+                // Profile photo picker
                 GestureDetector(
                   onTap: _showAvatarOptions,
                   child: Column(
@@ -90,26 +97,28 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                       SizedBox(height: 8),
                       Text(
                         'Change Photo',
-                        style: TextStyle(color: Colors.blue),
+                        style: TextStyle(color: AppColors.accent),
                       ),
                     ],
                   ),
                 ),
                 SizedBox(height: 20),
-                // 名称编辑
+                // Name input field
                 TextFormField(
                   controller: _nameController,
                   decoration: InputDecoration(
+                    fillColor: AppColors.background.withOpacity(0.5), 
                     labelText: 'Name',
                     border: OutlineInputBorder(),
                   ),
                 ),
                 SizedBox(height: 16),
-                // Bio编辑
+                // Bio input field
                 TextFormField(
                   controller: _bioController,
                   maxLines: 3,
                   decoration: InputDecoration(
+                    fillColor: AppColors.background.withOpacity(0.5), 
                     labelText: 'Bio',
                     border: OutlineInputBorder(),
                   ),
@@ -132,9 +141,9 @@ class _ProfileHeaderState extends State<ProfileHeader> {
     );
   }
 
+  /// Save profile changes to Firestore and Firebase Auth
   Future<void> _saveProfile() async {
     try {
-      // 更新Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.userId)
@@ -144,28 +153,32 @@ class _ProfileHeaderState extends State<ProfileHeader> {
             'updatedAt': FieldValue.serverTimestamp(),
           });
       
-      // 更新Firebase Auth中的显示名称
       await FirebaseAuth.instance.currentUser?.updateDisplayName(_nameController.text.trim());
       
       Navigator.pop(context);
       
-      // 通知父组件刷新数据
       if (widget.onProfileUpdated != null) {
         widget.onProfileUpdated!();
       }
       
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Profile updated successfully!')),
+        SnackBar(
+          content: Text('Profile updated successfully!'),
+          backgroundColor: Colors.green, 
+        ),
       );
       
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update profile: $e')),
+        SnackBar(
+          content: Text('Failed to update profile: $e'),
+          backgroundColor: Colors.red, 
+        ),
       );
     }
   }
 
-  // 其他方法保持不变...
+  /// Show options to change avatar
   void _showAvatarOptions() {
     showModalBottomSheet(
       context: context,
@@ -202,6 +215,7 @@ class _ProfileHeaderState extends State<ProfileHeader> {
     );
   }
 
+  /// Pick image from camera or gallery
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? image = await _picker.pickImage(
@@ -221,6 +235,7 @@ class _ProfileHeaderState extends State<ProfileHeader> {
     }
   }
 
+  /// Upload avatar to Firebase Storage and update Firestore
   Future<void> _uploadAvatar(File imageFile) async {
     setState(() {
       _isUploadingAvatar = true;
@@ -236,7 +251,6 @@ class _ProfileHeaderState extends State<ProfileHeader> {
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();
       
-      // 更新Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.userId)
@@ -245,7 +259,6 @@ class _ProfileHeaderState extends State<ProfileHeader> {
             'updatedAt': FieldValue.serverTimestamp(),
           });
       
-      // 通知父组件刷新
       if (widget.onProfileUpdated != null) {
         widget.onProfileUpdated!();
       }
@@ -268,9 +281,9 @@ class _ProfileHeaderState extends State<ProfileHeader> {
     }
   }
 
+  /// Remove avatar from Storage and Firestore
   Future<void> _removeAvatar() async {
     try {
-      // 删除存储中的文件
       try {
         final storageRef = FirebaseStorage.instance
             .ref()
@@ -281,7 +294,6 @@ class _ProfileHeaderState extends State<ProfileHeader> {
         print('File not found in storage: $e');
       }
       
-      // 更新Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(widget.userId)
@@ -290,7 +302,6 @@ class _ProfileHeaderState extends State<ProfileHeader> {
             'updatedAt': FieldValue.serverTimestamp(),
           });
       
-      // 通知父组件刷新
       if (widget.onProfileUpdated != null) {
         widget.onProfileUpdated!();
       }
@@ -306,7 +317,6 @@ class _ProfileHeaderState extends State<ProfileHeader> {
     }
   }
 
-  // build 方法保持不变...
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -314,11 +324,10 @@ class _ProfileHeaderState extends State<ProfileHeader> {
       color: AppColors.primary,
       child: Column(
         children: [
-          // 第一行：头像 + 名称 + 统计数据
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 头像
+              // Avatar with border and shadow
               Container(
                 width: 80,
                 height: 80,
@@ -351,12 +360,11 @@ class _ProfileHeaderState extends State<ProfileHeader> {
               
               SizedBox(width: 16),
               
-              // 名称和统计数据
+              // User info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 用户名 - 与统计数据对齐
                     Container(
                       padding: EdgeInsets.only(left: 8),
                       child: Text(
@@ -369,7 +377,6 @@ class _ProfileHeaderState extends State<ProfileHeader> {
                       ),
                     ),
                     SizedBox(height: 12),
-                    // 统计数据
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
@@ -386,7 +393,7 @@ class _ProfileHeaderState extends State<ProfileHeader> {
           
           SizedBox(height: 16),
           
-          // Bio - 左对齐
+          // User bio
           Container(
             width: double.infinity,
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -405,18 +412,19 @@ class _ProfileHeaderState extends State<ProfileHeader> {
           
           SizedBox(height: 16),
           
-          // 操作按钮 - 扁平且与父级同宽
+          // Edit profile or Follow/Message buttons
           if (widget.isOwnProfile)
             SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _showEditProfileDialog,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.secondary,
-                  foregroundColor: AppColors.primary,
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _showEditProfileDialog,
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: AppColors.accent, width: 2),
+                    foregroundColor: AppColors.accent,
+                    backgroundColor: AppColors.secondary,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(50),
                   ),
                 ),
                 child: Text('Edit Profile'),
@@ -463,6 +471,7 @@ class _ProfileHeaderState extends State<ProfileHeader> {
     );
   }
 
+  /// Build stat item (Posts / Following / Followers)
   Widget _buildStatItem(String label, int count) {
     return Column(
       children: [
@@ -471,13 +480,14 @@ class _ProfileHeaderState extends State<ProfileHeader> {
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: AppColors.secondary,
+            color: AppColors.background,
           ),
         ),
         Text(
           label,
           style: TextStyle(
             fontSize: 12,
+            fontWeight: FontWeight.bold,
             color: AppColors.accent,
           ),
         ),
@@ -485,6 +495,7 @@ class _ProfileHeaderState extends State<ProfileHeader> {
     );
   }
 
+  /// Default avatar when user has no photo
   Widget _buildDefaultAvatar() {
     return Container(
       decoration: BoxDecoration(
@@ -506,16 +517,14 @@ class _ProfileHeaderState extends State<ProfileHeader> {
     super.dispose();
   }
 
-    // 新增：开始与用户聊天的方法
+  /// Start chat with another user
   Future<void> _startChatWithUser(String otherUserId, String otherUserName) async {
     try {
       final currentUser = _auth.currentUser;
       if (currentUser == null) return;
 
-      // 获取或创建聊天室
       final chatRoomId = await _chatService.getOrCreateChatRoom(otherUserId, otherUserName);
       
-      // 导航到聊天界面
       Navigator.push(
         context,
         MaterialPageRoute(

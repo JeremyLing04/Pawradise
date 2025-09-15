@@ -9,7 +9,7 @@ class ChatService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  // 获取或创建聊天室
+  /// Get existing chat room or create a new one
   Future<String> getOrCreateChatRoom(String otherUserId, String otherUserName) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) throw Exception('User not logged in');
@@ -17,11 +17,11 @@ class ChatService {
     final participants = [currentUser.uid, otherUserId]..sort();
     final roomId = participants.join('_');
 
-    // 检查聊天室是否已存在
+    // Check if the chat room already exists
     final existingRoom = await _firestore.collection('chatRooms').doc(roomId).get();
-    
+
     if (!existingRoom.exists) {
-      // 创建新聊天室
+      // Create a new chat room
       await _firestore.collection('chatRooms').doc(roomId).set({
         'participantIds': participants,
         'participantNames': {
@@ -40,75 +40,53 @@ class ChatService {
     return roomId;
   }
 
-  // 发送文本消息
+  /// Send a text message
   Future<void> sendMessage(String chatRoomId, String content) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) throw Exception('User not logged in');
 
-    // 添加消息到子集合
-    await _firestore
-        .collection('chatRooms')
-        .doc(chatRoomId)
-        .collection('messages')
-        .add({
-          'senderId': currentUser.uid,
-          'senderName': currentUser.displayName ?? currentUser.email ?? 'User',
-          'content': content,
-          'type': 'text',
-          'timestamp': Timestamp.now(),
-          'read': false,
-        });
+    // Add message to subcollection
+    await _firestore.collection('chatRooms').doc(chatRoomId).collection('messages').add({
+      'senderId': currentUser.uid,
+      'senderName': currentUser.displayName ?? currentUser.email ?? 'User',
+      'content': content,
+      'type': 'text',
+      'timestamp': Timestamp.now(),
+      'read': false,
+    });
 
-    // 更新聊天室最后消息信息
-    await _updateChatRoomLastMessage(
-      chatRoomId,
-      content,
-      'text',
-      currentUser.uid,
-    );
+    // Update last message info in the chat room
+    await _updateChatRoomLastMessage(chatRoomId, content, 'text', currentUser.uid);
   }
 
-  // 发送图片消息
+  /// Send an image message
   Future<void> sendImageMessage(String chatRoomId, File imageFile) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) throw Exception('User not logged in');
 
     try {
-      // 1. 上传图片到 Firebase Storage
-      final String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final Reference storageRef = _storage
-          .ref()
-          .child('chat_images')
-          .child(chatRoomId)
-          .child(fileName);
+      // Upload image to Firebase Storage
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final storageRef = _storage.ref().child('chat_images').child(chatRoomId).child(fileName);
 
-      final UploadTask uploadTask = storageRef.putFile(imageFile);
-      final TaskSnapshot snapshot = await uploadTask;
-      
-      // 2. 获取图片下载URL
-      final String imageUrl = await snapshot.ref.getDownloadURL();
+      final uploadTask = storageRef.putFile(imageFile);
+      final snapshot = await uploadTask;
 
-      // 3. 保存消息到 Firestore
-      await _firestore
-          .collection('chatRooms')
-          .doc(chatRoomId)
-          .collection('messages')
-          .add({
-            'senderId': currentUser.uid,
-            'senderName': currentUser.displayName ?? currentUser.email ?? 'User',
-            'content': imageUrl,
-            'type': 'image',
-            'timestamp': Timestamp.now(),
-            'read': false,
-          });
+      // Get image download URL
+      final imageUrl = await snapshot.ref.getDownloadURL();
 
-      // 4. 更新聊天室最后消息信息
-      await _updateChatRoomLastMessage(
-        chatRoomId,
-        '[Image]',
-        'image',
-        currentUser.uid,
-      );
+      // Save message to Firestore
+      await _firestore.collection('chatRooms').doc(chatRoomId).collection('messages').add({
+        'senderId': currentUser.uid,
+        'senderName': currentUser.displayName ?? currentUser.email ?? 'User',
+        'content': imageUrl,
+        'type': 'image',
+        'timestamp': Timestamp.now(),
+        'read': false,
+      });
+
+      // Update last message info
+      await _updateChatRoomLastMessage(chatRoomId, '[Image]', 'image', currentUser.uid);
 
     } catch (e) {
       print('Error sending image message: $e');
@@ -116,13 +94,9 @@ class ChatService {
     }
   }
 
-  // 更新聊天室最后消息信息（私有方法）
+  /// Update last message information in chat room (private method)
   Future<void> _updateChatRoomLastMessage(
-    String chatRoomId, 
-    String content, 
-    String type, 
-    String senderId
-  ) async {
+      String chatRoomId, String content, String type, String senderId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
@@ -133,18 +107,18 @@ class ChatService {
       'lastMessageSenderId': senderId,
     };
 
-    // 如果发送者不是当前用户（理论上不会发生），或者接收者查看消息时增加未读计数
+    // Increment unread count for the receiver
     if (senderId != currentUser.uid) {
       updateData['unreadCount'] = FieldValue.increment(1);
     } else {
-      // 如果是自己发送的消息，重置未读计数（因为接收方需要看到）
+      // For sender, also increment so receiver can see it
       updateData['unreadCount'] = FieldValue.increment(1);
     }
 
     await _firestore.collection('chatRooms').doc(chatRoomId).update(updateData);
   }
 
-  // 获取用户的所有聊天室
+  /// Get all chat rooms of the current user
   Stream<QuerySnapshot> getUserChatRooms() {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return const Stream.empty();
@@ -156,7 +130,7 @@ class ChatService {
         .snapshots();
   }
 
-  // 获取聊天室消息
+  /// Get messages for a specific chat room
   Stream<QuerySnapshot> getChatMessages(String chatRoomId) {
     return _firestore
         .collection('chatRooms')
@@ -166,17 +140,17 @@ class ChatService {
         .snapshots();
   }
 
-  // 标记消息为已读
+  /// Mark all messages in a chat room as read
   Future<void> markAsRead(String chatRoomId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
-    // 1. 更新聊天室的未读计数
+    // Reset chat room unread count
     await _firestore.collection('chatRooms').doc(chatRoomId).update({
       'unreadCount': 0,
     });
 
-    // 2. 标记所有未读消息为已读
+    // Mark messages as read
     final unreadMessages = await _firestore
         .collection('chatRooms')
         .doc(chatRoomId)
@@ -190,12 +164,10 @@ class ChatService {
       batch.update(doc.reference, {'read': true});
     }
 
-    if (unreadMessages.docs.isNotEmpty) {
-      await batch.commit();
-    }
+    if (unreadMessages.docs.isNotEmpty) await batch.commit();
   }
 
-  // 获取未读消息总数
+  /// Get total unread message count across all chat rooms
   Stream<int> getTotalUnreadCount() {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return Stream.value(0);
@@ -209,58 +181,42 @@ class ChatService {
         final data = doc.data() as Map<String, dynamic>;
         final lastSender = data['lastMessageSenderId'] ?? '';
         final unreadCount = data['unreadCount'] ?? 0;
-        
-        // 只计算别人发送的未读消息
-        if (lastSender != currentUser.uid) {
-          return total + (unreadCount as int);
-        }
+
+        // Count only messages sent by others
+        if (lastSender != currentUser.uid) return total + (unreadCount as int);
         return total;
       });
     });
   }
 
-  // 获取特定聊天室的未读消息数量
+  /// Get unread message count for a specific chat room
   Stream<int> getChatRoomUnreadCount(String chatRoomId) {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return Stream.value(0);
 
-    return _firestore
-        .collection('chatRooms')
-        .doc(chatRoomId)
-        .snapshots()
-        .map((snapshot) {
+    return _firestore.collection('chatRooms').doc(chatRoomId).snapshots().map((snapshot) {
       if (!snapshot.exists) return 0;
-      
+
       final data = snapshot.data() as Map<String, dynamic>;
       final lastSender = data['lastMessageSenderId'] ?? '';
       final unreadCount = data['unreadCount'] ?? 0;
-      
-      // 只计算别人发送的未读消息
-      if (lastSender != currentUser.uid) {
-        return unreadCount as int;
-      }
-      return 0;
+
+      return lastSender != currentUser.uid ? unreadCount as int : 0;
     });
   }
 
-  // 删除聊天室
+  /// Delete a chat room and all its messages
   Future<void> deleteChatRoom(String chatRoomId) async {
     final currentUser = _auth.currentUser;
     if (currentUser == null) return;
 
-    // 首先删除所有消息
-    final messages = await _firestore
-        .collection('chatRooms')
-        .doc(chatRoomId)
-        .collection('messages')
-        .get();
-
+    // Delete all messages in the room
+    final messages = await _firestore.collection('chatRooms').doc(chatRoomId).collection('messages').get();
     final batch = _firestore.batch();
-    for (final doc in messages.docs) {
-      batch.delete(doc.reference);
-    }
 
-    // 然后删除聊天室本身
+    for (final doc in messages.docs) batch.delete(doc.reference);
+
+    // Delete the chat room document itself
     batch.delete(_firestore.collection('chatRooms').doc(chatRoomId));
 
     await batch.commit();

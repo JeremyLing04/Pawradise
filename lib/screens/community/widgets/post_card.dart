@@ -7,6 +7,7 @@ import 'package:pawradise/screens/community/widgets/like_button_widget.dart';
 import 'package:pawradise/services/community_service.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../../models/post_model.dart';
+import '../../../constants.dart';
 
 class PostCard extends StatelessWidget {
   final PostModel post;
@@ -14,8 +15,8 @@ class PostCard extends StatelessWidget {
   final String? eventId;
 
   const PostCard({
-    super.key, 
-    required this.post, 
+    super.key,
+    required this.post,
     required this.onTap,
     this.eventId,
   });
@@ -27,98 +28,119 @@ class PostCard extends StatelessWidget {
     final isOwnPost = currentUserId == post.authorId;
 
     return Card(
+      color: Colors.transparent,
       margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (post.hasImage && post.imageUrl.isNotEmpty)
-              _buildPostImage(post.imageUrl),
-            
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 帖子类型徽章
-                  _buildPostTypeBadge(post.type),
-                  const SizedBox(height: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppColors.accent, width: 2),
+      ),
+      elevation: 3,
+      child: ClipRRect(  // <- 让整个卡片裁圆角
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (post.hasImage && post.imageUrl.isNotEmpty)
+                _buildPostImage(post.imageUrl),
+              
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.background.withOpacity(0.95),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 帖子类型徽章
+                    _buildPostTypeBadge(post.type),
+                    const SizedBox(height: 8),
 
-                  // 帖子标题
-                  Text(
-                    post.title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                    // 帖子标题
+                    Text(
+                      post.title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  
-                  const SizedBox(height: 8),
-                  
-                  // 帖子内容预览
-                  post.type == 'event'
-                      ? MarkdownBody(
-                          data: post.content,
-                          softLineBreak: true,
-                          styleSheet: MarkdownStyleSheet(
-                            p: const TextStyle(fontSize: 14, color: Colors.black87),
-                            strong: const TextStyle(fontWeight: FontWeight.bold),
+                    
+                    const SizedBox(height: 8),
+                    
+                    // 帖子内容预览
+                    post.type == 'event'
+                        ? MarkdownBody(
+                            data: post.content,
+                            softLineBreak: true,
+                            styleSheet: MarkdownStyleSheet(
+                              p: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                              strong: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            shrinkWrap: true,
+                          )
+                        : Text(
+                            post.content,
+                            maxLines: post.hasImage ? 2 : 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
                           ),
-                          shrinkWrap: true,
-                        )
-                      : Text(
-                          post.content,
-                          maxLines: post.hasImage ? 2 : 3,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 14, color: Colors.black87),
-                        ),
-                  
-                  const SizedBox(height: 12),
-                  
-                  // 作者和时间信息
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 12,
-                        backgroundColor: Colors.green,
-                        child: Text(
-                          post.authorName[0],
-                          style: const TextStyle(
-                            fontSize: 10,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold
+                    
+                    const SizedBox(height: 12),
+                    
+                    // 作者和时间信息
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundColor: AppColors.accent,
+                          child: Text(
+                            post.authorName[0],
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        post.authorName,
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                      const Spacer(),
-                      Text(
-                        _formatTimestamp(post.createdAt),
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                  
-                  // 互动统计和活动按钮
-                  const SizedBox(height: 16),
-                  _buildBottomSection(context, communityService, currentUserId, isOwnPost),
-                ],
+                        const SizedBox(width: 8),
+                        Text(
+                          post.authorName,
+                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                        const Spacer(),
+                        Text(
+                          _formatTimestamp(post.createdAt),
+                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // 底部互动
+                    _buildBottomSection(context, communityService, currentUserId, isOwnPost),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // 构建底部区域（点赞、评论、活动按钮）
   Widget _buildBottomSection(BuildContext context, CommunityService communityService, 
       String? currentUserId, bool isOwnPost) {
     return Row(
@@ -131,61 +153,59 @@ class PostCard extends StatelessWidget {
                 postId: post.id!,
                 initialLikes: post.likes,
               ),
+              const SizedBox(width: 4),
               Text(
                 '${post.likes}',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
               const SizedBox(width: 16),
-              Icon(Icons.comment, size: 16, color: Colors.grey[600]),
+              Icon(Icons.comment, size: 16, color: AppColors.textSecondary),
               const SizedBox(width: 4),
               Text(
                 '${post.comments}',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],
           ),
         ),
         
-        // 右侧：参加人数徽章和加入按钮（如果是事件类型）
+        // 右侧：事件参与
         if (post.type == 'event' && eventId != null)
           Row(
             children: [
               _buildParticipantBadge(context, communityService),
-              
-              if (!isOwnPost) 
-                _buildEventJoinButton(context, communityService, currentUserId, post), // 传递 post 参数
+              if (!isOwnPost)
+                _buildEventJoinButton(context, communityService, currentUserId, post),
             ],
           ),
       ],
     );
   }
 
-  // 构建参加人数徽章（所有事件帖子都显示）
   Widget _buildParticipantBadge(BuildContext context, CommunityService communityService) {
     return FutureBuilder<int>(
       future: communityService.getParticipantCount(eventId!),
       builder: (context, snapshot) {
         final participantCount = snapshot.data ?? 0;
-        
         return Container(
           margin: const EdgeInsets.only(left: 8),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.2),
+            color: AppColors.accent.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.green, width: 1),
+            border: Border.all(color: AppColors.accent, width: 2),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.people, size: 16, color: Colors.green[700]),
+              Icon(Icons.people, size: 16, color: AppColors.accent),
               const SizedBox(width: 4),
               Text(
                 '$participantCount',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
-                  color: Colors.green[700],
+                  color: AppColors.accent,
                 ),
               ),
             ],
@@ -195,13 +215,11 @@ class PostCard extends StatelessWidget {
     );
   }
 
-  // 构建活动加入按钮
   Widget _buildEventJoinButton(BuildContext context, CommunityService communityService, String? currentUserId, PostModel post) {
     return FutureBuilder<bool>(
       future: communityService.isUserJoined(eventId!),
       builder: (context, joinSnapshot) {
         final isJoined = joinSnapshot.data ?? false;
-        
         return Container(
           margin: const EdgeInsets.only(left: 8),
           child: ElevatedButton(
@@ -211,7 +229,7 @@ class PostCard extends StatelessWidget {
                 eventId!, 
                 context,
                 eventTitle: post.title,
-                eventTime: post.eventTime ?? DateTime.now().add(Duration(hours: 1)),
+                eventTime: post.eventTime ?? DateTime.now().add(const Duration(hours: 1)),
                 eventDescription: post.eventDescription ?? post.content,
                 authorName: post.authorName,
               );
@@ -220,7 +238,7 @@ class PostCard extends StatelessWidget {
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: isJoined ? Colors.grey : Colors.green,
+              backgroundColor: isJoined ? Colors.grey : AppColors.accent,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               minimumSize: const Size(0, 32),
@@ -238,12 +256,11 @@ class PostCard extends StatelessWidget {
     );
   }
 
-  // 构建帖子图片
   Widget _buildPostImage(String imageUrl) {
     return ClipRRect(
       borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(12),
-        topRight: Radius.circular(12),
+        topLeft: Radius.circular(16),
+        topRight: Radius.circular(16),
       ),
       child: CachedNetworkImage(
         imageUrl: imageUrl,
@@ -280,13 +297,14 @@ class PostCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: colors[type]?.withOpacity(0.2),
+        color: colors[type]?.withOpacity(0.15),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors[type] ?? AppColors.accent, width: 2),
       ),
       child: Text(
         labels[type] ?? type,
         style: TextStyle(
-          color: colors[type],
+          color: colors[type] ?? AppColors.accent,
           fontSize: 12,
           fontWeight: FontWeight.bold,
         ),

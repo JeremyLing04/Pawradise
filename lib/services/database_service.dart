@@ -41,7 +41,7 @@ class FirestoreService {
 
     return snapshot.docs.map((doc) {
       final data = doc.data();
-      data['id'] = doc.id; // 确保 event.id 正确
+      data['id'] = doc.id; 
       return Event.fromMap(data);
     }).toList();
   }

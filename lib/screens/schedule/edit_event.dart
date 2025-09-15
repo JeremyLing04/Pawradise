@@ -26,6 +26,7 @@ class _EditEventDialogState extends State<EditEventDialog> {
   @override
   void initState() {
     super.initState();
+    // Initialize controllers and values with existing event data
     _titleController = TextEditingController(text: widget.event.title);
     _descriptionController = TextEditingController(
       text: widget.event.description ?? '',
@@ -45,6 +46,7 @@ class _EditEventDialogState extends State<EditEventDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // Title input
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: 'Title'),
@@ -55,11 +57,13 @@ class _EditEventDialogState extends State<EditEventDialog> {
                   return null;
                 },
               ),
+              // Description input
               TextFormField(
                 controller: _descriptionController,
                 decoration: const InputDecoration(labelText: 'Description'),
                 maxLines: 3,
               ),
+              // Event type selection
               DropdownButtonFormField<EventType>(
                 value: _selectedType,
                 items: EventType.values.map((type) {
@@ -75,6 +79,7 @@ class _EditEventDialogState extends State<EditEventDialog> {
                 },
                 decoration: const InputDecoration(labelText: 'Event Type'),
               ),
+              // Date & time picker
               ListTile(
                 title: Text(
                   'Date: ${DateFormat('MMM d, yyyy').format(_selectedTime)}',
@@ -86,6 +91,7 @@ class _EditEventDialogState extends State<EditEventDialog> {
                 onTap: () => _selectTime(context),
               ),
               const SizedBox(height: 16),
+              // Reminder time selection
               DropdownButtonFormField<int>(
                 value: _notificationMinutes,
                 items: EventProvider.notificationTimeOptions.map((minutes) {
@@ -106,10 +112,12 @@ class _EditEventDialogState extends State<EditEventDialog> {
         ),
       ),
       actions: [
+        // Cancel button
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
+        // Update button
         ElevatedButton(
           onPressed: () => _updateEvent(context),
           child: const Text('Update'),
@@ -118,6 +126,7 @@ class _EditEventDialogState extends State<EditEventDialog> {
     );
   }
 
+  // Open time picker to edit event time
   Future<void> _selectTime(BuildContext context) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
@@ -137,13 +146,14 @@ class _EditEventDialogState extends State<EditEventDialog> {
     }
   }
 
+  // Update event in provider
   void _updateEvent(BuildContext context) {
     if (_formKey.currentState!.validate()) {
       final userId = FirebaseAuth.instance.currentUser!.uid;
 
       final updatedEvent = Event(
         id: widget.event.id,
-        userId: userId, // 保证使用当前用户 UID
+        userId: userId, // Ensure current user UID
         petId: widget.event.petId,
         title: _titleController.text,
         description: _descriptionController.text.isEmpty
