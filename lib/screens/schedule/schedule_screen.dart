@@ -48,6 +48,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       ),
       // Floating action button to add new event
       floatingActionButton: FloatingActionButton(
+        heroTag: UniqueKey(),
         onPressed: () => _showAddEventDialog(context),
         backgroundColor: AppColors.accent.withOpacity(0.7),
         foregroundColor: AppColors.background,
