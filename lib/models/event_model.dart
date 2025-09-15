@@ -36,9 +36,9 @@ class Event {
       'title': title,
       'description': description,
       'type': type.toString().split('.').last,
-      'scheduledTime': Timestamp.fromDate(scheduledTime), 
-      'isCompleted': isCompleted,
-      'createdAt': Timestamp.fromDate(createdAt), 
+      'scheduledTime': Timestamp.fromDate(scheduledTime),
+      'isCompleted': isCompleted ? 1 : 0,
+      'createdAt': Timestamp.fromDate(createdAt),
       'notificationMinutes': notificationMinutes,
       'sharedToCommunity': sharedToCommunity,
     };
