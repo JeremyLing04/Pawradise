@@ -567,9 +567,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       _searchResults = [];
     });
   }
-
-  // Rest of the code remains the same (keywords section, image section, create post, etc.)
-  // ... [Keep the existing _buildKeywordsSection, _buildImageSection, _createPost methods] ...
   
   Widget _buildKeywordsSection() {
     return Column(

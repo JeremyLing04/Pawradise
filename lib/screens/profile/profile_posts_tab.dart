@@ -4,30 +4,28 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/post_model.dart';
 import '../../screens/community/widgets/post_card.dart';
 import '../../screens/community/post_detail_screen.dart';
-import '../../screens/community/edit_post_screen.dart'; // 添加导入
-import '../../services/community_service.dart'; // 添加导入
+import '../../screens/community/edit_post_screen.dart';
+import '../../services/community_service.dart';
 import '../../constants.dart';
 
 class ProfilePostsTab extends StatelessWidget {
   final String userId;
-  final bool isCurrentUser; // 添加这个参数来判断是否是当前用户
-  final Function(PostModel)? onEdit; // 添加编辑回调
-  final Function(String)? onDelete; // 添加删除回调
+  final bool isCurrentUser;
+  final Function(PostModel)? onEdit;
+  final Function(String)? onDelete;
 
   const ProfilePostsTab({
     super.key,
     required this.userId,
-    this.isCurrentUser = false, // 默认为false
+    this.isCurrentUser = false,
     this.onEdit,
     this.onDelete,
   });
 
-  // 编辑帖子的方法
   void _editPost(BuildContext context, PostModel post) {
     if (onEdit != null) {
       onEdit!(post);
     } else {
-      // 如果没有传递回调，直接导航到编辑页面
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -37,12 +35,10 @@ class ProfilePostsTab extends StatelessWidget {
     }
   }
 
-  // 删除帖子的方法
   Future<void> _deletePost(BuildContext context, String postId) async {
     if (onDelete != null) {
       onDelete!(postId);
     } else {
-      // 如果没有传递回调，直接执行删除
       final communityService = CommunityService();
       final postDoc = await FirebaseFirestore.instance
           .collection('posts')

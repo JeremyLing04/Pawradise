@@ -285,10 +285,8 @@ class _CommentsScreenState extends State<CommentsScreen> {
 
     if (confirmed == true) {
       try {
-        // 删除评论
         await _firestore.collection('comments').doc(comment.id).delete();
 
-        // 更新帖子的评论计数
         await _firestore.collection('posts').doc(widget.postId).update({
           'comments': FieldValue.increment(-1),
         });

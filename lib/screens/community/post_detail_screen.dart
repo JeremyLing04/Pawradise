@@ -70,7 +70,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
   }
 
-  // 新增：打开Google Maps
   Future<void> _openGoogleMaps(String address, String locationName) async {
     final addressQuery = Uri.encodeComponent(address);
     final url = 'https://www.google.com/maps/search/?api=1&query=$addressQuery&query_place_id=$locationName';
@@ -112,7 +111,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     Navigator.push(context, MaterialPageRoute(builder: (context) => ProfileScreen(userId: userId)));
   }
 
-  // 显示删除确认对话框
   void _showDeleteConfirmation(BuildContext context, PostModel post) {
     showDialog(
       context: context,
@@ -129,7 +127,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
                 widget.onDelete?.call(post.id!);
-                Navigator.of(context).pop(); // 返回上一页
+                Navigator.of(context).pop();
               },
               child: const Text('Delete', style: TextStyle(color: Colors.red)),
             ),
@@ -182,7 +180,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                             Icon(Icons.access_time, size: 16, color: Colors.grey),
                             const SizedBox(width: 4),
                             Text(_formatDetailTimestamp(post.createdAt), style: const TextStyle(fontSize: 14, color: Colors.grey)),
-                            // 新增：地点信息
                             if (post.location != null && post.location!['name'] != null)
                               _buildLocationInfo(post.location!),
                             const Spacer(),
@@ -223,7 +220,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
-  // 新增：地点信息部件
   Widget _buildLocationInfo(Map<String, dynamic> location) {
     final locationName = location['name'] ?? '';
     final locationAddress = location['description'] ?? '';
@@ -290,7 +286,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           ),
           centerTitle: true,
           actions: [
-            // 如果是自己的帖子，显示编辑和删除按钮
             if (_isCurrentUserPost) _buildPostActionsMenu(post),
             if (_auth.currentUser != null && !_isCurrentUserPost) _buildFollowButton(post.authorId),
             Container(
@@ -305,7 +300,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
-  // 新增：帖子操作菜单
   Widget _buildPostActionsMenu(PostModel post) {
     return PopupMenuButton<String>(
       icon: Icon(Icons.more_vert, color: AppColors.background),

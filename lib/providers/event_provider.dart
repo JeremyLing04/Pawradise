@@ -29,7 +29,6 @@ class EventProvider with ChangeNotifier {
   Future<void> addEvent(Event event, {bool shareToCommunity = false}) async {
     await _firestoreService.addEvent(event);
 
-    // 只有在事件未完成时才安排通知
     if (!event.isCompleted) {
       final notificationTime = event.scheduledTime.subtract(
         Duration(minutes: event.notificationMinutes),
@@ -42,7 +41,6 @@ class EventProvider with ChangeNotifier {
         scheduledTime: notificationTime,
       );
     }
-    // 分享到社区
     if (shareToCommunity) {
       await _communityService.shareEventToCommunity(event);
     }
@@ -56,7 +54,6 @@ class EventProvider with ChangeNotifier {
 
     await _notificationService.cancelNotification(event.id.hashCode);
 
-    // 只有在事件未完成时才重新安排通知
     if (!event.isCompleted) {
       final notificationTime = event.scheduledTime.subtract(
         Duration(minutes: event.notificationMinutes),

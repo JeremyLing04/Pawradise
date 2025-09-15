@@ -56,7 +56,6 @@ class _CommentLikeButtonState extends State<CommentLikeButton> {
       final likeDocs = await likeQuery.get();
 
       if (isLiked) {
-        // 取消点赞
         if (likeDocs.docs.isNotEmpty) {
           await _firestore.runTransaction((transaction) async {
             transaction.delete(likeDocs.docs.first.reference);
@@ -72,7 +71,6 @@ class _CommentLikeButtonState extends State<CommentLikeButton> {
         });
         return false;
       } else {
-        // 点赞
         await _firestore.runTransaction((transaction) async {
           final newLikeRef = _firestore.collection('comment_likes').doc();
           transaction.set(newLikeRef, {

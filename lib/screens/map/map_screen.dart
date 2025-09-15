@@ -8,7 +8,6 @@ import '../../models/location_model.dart';
 import 'package:permission_handler/permission_handler.dart' as permission_handler;
 import '../../services/places_service.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'share_screen.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({Key? key}) : super(key: key);

@@ -62,19 +62,15 @@ class PostCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 顶部行：类型徽章和操作菜单
                     Row(
                       children: [
-                        // 帖子类型徽章
                         _buildPostTypeBadge(post.type),
                         const Spacer(),
-                        // 如果是自己的帖子，显示操作菜单
                         if (isOwnPost) _buildPostMenu(context),
                       ],
                     ),
                     const SizedBox(height: 8),
 
-                    // 帖子标题
                     Text(
                       post.title,
                       style: TextStyle(
@@ -87,13 +83,11 @@ class PostCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
 
-                    // 地点信息
                     if (post.location != null && post.location!['name'] != null)
                       _buildLocationInfo(post.location!),
                     
                     const SizedBox(height: 8),
                     
-                    // 帖子内容预览
                     post.type == 'event'
                         ? MarkdownBody(
                             data: post.content,
@@ -116,7 +110,6 @@ class PostCard extends StatelessWidget {
                     
                     const SizedBox(height: 12),
                     
-                    // 作者和时间信息
                     Row(
                       children: [
                         CircleAvatar(
@@ -137,7 +130,6 @@ class PostCard extends StatelessWidget {
                           style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                         ),
                         const Spacer(),
-                        // 时间信息
                         Text(
                           _formatTimestamp(post.createdAt),
                           style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
@@ -147,7 +139,6 @@ class PostCard extends StatelessWidget {
                     
                     const SizedBox(height: 16),
                     
-                    // 底部互动
                     _buildBottomSection(context, communityService, currentUserId, isOwnPost),
                   ],
                 ),
@@ -159,7 +150,6 @@ class PostCard extends StatelessWidget {
     );
   }
 
-  // 帖子操作菜单
   Widget _buildPostMenu(BuildContext context) {
     return PopupMenuButton<String>(
       icon: Icon(Icons.more_vert, color: AppColors.textSecondary, size: 20),
@@ -195,7 +185,6 @@ class PostCard extends StatelessWidget {
     );
   }
 
-  // 显示删除确认对话框
   void _showDeleteConfirmation(BuildContext context) {
     showDialog(
       context: context,
@@ -221,7 +210,6 @@ class PostCard extends StatelessWidget {
     );
   }
 
-  // 修改：简洁版地点信息，放在时间左边
   Widget _buildLocationInfo(Map<String, dynamic> location) {
     final locationName = location['name'] ?? '';
     
@@ -251,7 +239,6 @@ class PostCard extends StatelessWidget {
       String? currentUserId, bool isOwnPost) {
     return Row(
       children: [
-        // 左侧：点赞和评论
         Expanded(
           child: Row(
             children: [
@@ -275,7 +262,6 @@ class PostCard extends StatelessWidget {
           ),
         ),
         
-        // 右侧：事件参与
         if (post.type == 'event' && eventId != null)
           Row(
             children: [

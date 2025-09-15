@@ -54,7 +54,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
           ),
           child: Column(
             children: [
-              // 搜索栏
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: TextField(
@@ -78,7 +77,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 ),
               ),
               
-              // 聊天列表
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: _chatService.getUserChatRooms(),

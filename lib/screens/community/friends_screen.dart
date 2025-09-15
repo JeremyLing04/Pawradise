@@ -80,7 +80,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  // 关注者列表
   Widget _buildFollowersList(String userId) {
     return StreamBuilder<QuerySnapshot>(
       stream: _friendsService.getFollowers(userId),
@@ -129,7 +128,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  // 正在关注列表
   Widget _buildFollowingList(String userId) {
     return StreamBuilder<QuerySnapshot>(
       stream: _friendsService.getFollowing(userId),
@@ -180,7 +178,6 @@ class _FriendsScreenState extends State<FriendsScreen> {
     );
   }
 
-  // 用户卡片
   Widget _buildUserTile({
     required String userId,
     required String username,

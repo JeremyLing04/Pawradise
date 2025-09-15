@@ -7,7 +7,7 @@ class FriendsService {
 
   Future<void> followUser(String targetUserId) async {
     final currentUser = _auth.currentUser;
-    if (currentUser == null) throw Exception('用户未登录');
+    if (currentUser == null) throw Exception('User is not logged in');
 
     final batch = _firestore.batch();
     
@@ -35,7 +35,7 @@ class FriendsService {
 
   Future<void> unfollowUser(String targetUserId) async {
     final currentUser = _auth.currentUser;
-    if (currentUser == null) throw Exception('用户未登录');
+    if (currentUser == null) throw Exception('User is not logged in');
 
     final batch = _firestore.batch();
     

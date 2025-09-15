@@ -40,7 +40,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
     return query.snapshots();
   }
 
-  // 编辑帖子的方法
   void _editPost(BuildContext context, PostModel post) {
     Navigator.push(
       context,
@@ -48,14 +47,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
         builder: (context) => EditPostScreen(post: post),
       ),
     ).then((_) {
-      // 可选：在编辑完成后刷新页面
       setState(() {});
     });
   }
 
-  // 删除帖子的方法
   Future<void> _deletePost(BuildContext context, String postId) async {
-    // 首先获取帖子信息以获取图片URL
     final postDoc = await FirebaseFirestore.instance
         .collection('posts')
         .doc(postId)
@@ -92,8 +88,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Post deleted successfully')),
           );
-          
-          // 刷新页面
           setState(() {});
         } catch (e) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -353,8 +347,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-  
-
   // Build navigation tabs
   Widget _buildNavigationTabs() {
     return Container(
@@ -470,6 +462,4 @@ class _CommunityScreenState extends State<CommunityScreen> {
         return Icons.category;
     }
   }
-
-  
 }

@@ -83,7 +83,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         });
       }
     } catch (e) {
-      // 在生产环境中可以使用 logger 替代 print
       debugPrint('Failed to load user data: $e');
     }
   }
@@ -158,7 +157,6 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     }
   }
 
-  // 编辑帖子的方法
   void _editPost(PostModel post) {
     Navigator.push(
       context,
@@ -166,14 +164,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         builder: (context) => EditPostScreen(post: post),
       ),
     ).then((_) {
-      // 编辑完成后刷新数据
       _refreshProfileData();
     });
   }
 
-  // 删除帖子的方法
   Future<void> _deletePost(String postId) async {
-    // 首先获取帖子信息以获取图片URL
     final postDoc = await FirebaseFirestore.instance
         .collection('posts')
         .doc(postId)

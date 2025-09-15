@@ -51,13 +51,11 @@ class _EditPostScreenState extends State<EditPostScreen> {
   void initState() {
     super.initState();
     
-    // 使用现有帖子的数据填充表单
     _titleController.text = widget.post.title;
     _contentController.text = widget.post.content;
     _selectedType = widget.post.type;
     _keywords = List<String>.from(widget.post.keywords);
     
-    // 设置位置信息
     if (widget.post.location != null) {
       _selectedLocation = LocationModel(
         id: widget.post.location!['id'] ?? '',
@@ -215,7 +213,6 @@ class _EditPostScreenState extends State<EditPostScreen> {
     );
   }
 
-  // 删除现有图片
   Future<void> _deleteExistingImage() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -242,7 +239,6 @@ class _EditPostScreenState extends State<EditPostScreen> {
     }
   }
 
-  // 更新帖子
   Future<void> _updatePost() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -253,18 +249,15 @@ class _EditPostScreenState extends State<EditPostScreen> {
       String imageUrl = widget.post.imageUrl;
       bool hasImage = widget.post.hasImage;
 
-      // 如果选择了新图片，上传新图片
       if (_selectedImage != null) {
         setState(() => _isUploadingImage = true);
         imageUrl = await _uploadImage(_selectedImage!);
         hasImage = true;
         setState(() => _isUploadingImage = false);
       } else if (_selectedImage == null && widget.post.hasImage) {
-        // 保持原有图片
         hasImage = true;
         imageUrl = widget.post.imageUrl;
       } else {
-        // 没有图片
         hasImage = false;
         imageUrl = '';
       }
@@ -279,7 +272,6 @@ class _EditPostScreenState extends State<EditPostScreen> {
           ? PostModel.locationFromModel(_selectedLocation!)
           : null;
 
-      // 更新帖子数据
       await FirebaseFirestore.instance
           .collection('posts')
           .doc(widget.post.id)
@@ -310,14 +302,7 @@ class _EditPostScreenState extends State<EditPostScreen> {
     }
   }
 
-  // 以下方法与 CreatePostScreen 相同，需要复制过来：
-  // _buildLocationSection, _debounceSearch, _searchLocation, _selectSearchResult,
-  // _getCurrentLocation, _getAddressFromPlacemark, _formatPlacemark, _clearLocation,
-  // _buildKeywordsSection, _addKeyword, _removeKeyword, _buildImageSection,
-  // _pickImage, _uploadImage, dispose
-
-  // 复制 CreatePostScreen 中的以下方法：
-Widget _buildLocationSection() {
+  Widget _buildLocationSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -690,9 +675,6 @@ Widget _buildLocationSection() {
       _searchResults = [];
     });
   }
-
-  // Rest of the code remains the same (keywords section, image section, create post, etc.)
-  // ... [Keep the existing _buildKeywordsSection, _buildImageSection, _createPost methods] ...
   
   Widget _buildKeywordsSection() {
     return Column(
