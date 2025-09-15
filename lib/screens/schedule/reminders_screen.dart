@@ -26,7 +26,7 @@ class RemindersView extends StatelessWidget {
         ),
       ),
       body: Container(
-        margin: const EdgeInsets.all(12), 
+        margin: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           border: Border.all(
             color: AppColors.accent,
@@ -36,6 +36,7 @@ class RemindersView extends StatelessWidget {
         ),
         child: Consumer<EventProvider>(
           builder: (context, eventProvider, child) {
+            // Filter upcoming events (after current time)
             final upcomingEvents = eventProvider.events
                 .where((event) => event.scheduledTime.isAfter(DateTime.now()))
                 .toList();
@@ -52,6 +53,7 @@ class RemindersView extends StatelessWidget {
               );
             }
 
+            // Display upcoming events in a scrollable list
             return ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: upcomingEvents.length,
@@ -67,6 +69,7 @@ class RemindersView extends StatelessWidget {
   }
 }
 
+// Individual reminder item
 class ReminderItem extends StatelessWidget {
   final Event event;
 
@@ -86,11 +89,13 @@ class ReminderItem extends StatelessWidget {
           horizontal: 20,
           vertical: 16,
         ),
+        // Event type icon
         leading: Icon(
           event.type.icon,
           color: AppColors.accent,
           size: 32,
         ),
+        // Event title
         title: Text(
           event.title,
           style: TextStyle(
@@ -99,6 +104,7 @@ class ReminderItem extends StatelessWidget {
             fontSize: 18,
           ),
         ),
+        // Event date/time and optional description
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -122,6 +128,7 @@ class ReminderItem extends StatelessWidget {
               ),
           ],
         ),
+        // Delete button
         trailing: IconButton(
           icon: Icon(Icons.delete, color: AppColors.accent, size: 26),
           onPressed: () => _deleteEvent(context),
@@ -130,6 +137,7 @@ class ReminderItem extends StatelessWidget {
     );
   }
 
+  // Show delete confirmation dialog
   void _deleteEvent(BuildContext context) {
     showDialog(
       context: context,

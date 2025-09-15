@@ -26,7 +26,30 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 0; // Currently selected bottom navigation index
+  String _name = ""; // User display name
+
+  @override
+  void initState() {
+    super.initState();
+    _loadName(); // Load user name from Firestore
+  }
+
+  // Load the current user's name from Firestore
+  Future<void> _loadName() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      if (doc.exists) {
+        setState(() {
+          _name = doc.data()?['name'] ?? "User";
+        });
+      }
+    } catch (e) {
+      print("Error loading name: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,38 +61,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ? AppHeader.buildAppBar(
                   context: context,
                   title: "Pawradise",
-                  actions: [
-                    IconButton(
-                      icon: Icon(Icons.notifications, color: AppColors.accent),
-                      onPressed: () {},
-                    ),
-                  ],
                 )
               : null,
-          body: _currentPage,
+          body: _currentPage, // Display the currently selected page
           bottomNavigationBar: _buildBottomNavigationBar(),
         );
       },
     );
   }
 
+  // Getter to return the current page based on selected index
   Widget get _currentPage {
     switch (_selectedIndex) {
-      case 0:
-        return _buildDashboardContent(FirebaseAuth.instance.currentUser?.displayName ?? "User");
-      case 1:
-        return const CommunityScreen();
-      case 2:
-        return const ScheduleScreen();
-      case 3:
-        return const MapScreen();
-      case 4:
-        return const ProfileScreen();
-      default:
-        return const SizedBox.shrink();
+      case 0: return _buildDashboardContent(_name);
+      case 1: return const CommunityScreen();
+      case 2: return const ScheduleScreen();
+      case 3: return const MapScreen();
+      case 4: return const ProfileScreen();
     }
+    return const SizedBox.shrink(); // Ensure a widget is always returned
   }
 
+  // Build the bottom navigation bar
   BottomNavigationBar _buildBottomNavigationBar() {
     return BottomNavigationBar(
       items: AppBottomBar.items,
@@ -82,10 +95,67 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  // Determine contrast color for text/icons based on background
   Color getContrastColor(Color bgColor) {
     return bgColor.computeLuminance() > 0.5 ? AppColors.accent : AppColors.background;
   }
 
+  
+  // Quick action buttons like Ask PawPal, Add Event, etc.
+  Widget _buildQuickActions(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: 1.8,
+          children: [
+            _buildActionButton(Icons.chat, "Ask PawPal", AppColors.primary, () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) => const AIChatScreen()));
+            }),
+            _buildActionButton(Icons.add_circle, "New Post", AppColors.accent.withOpacity(0.3), () => _switchToCommunity(context)),
+            _buildActionButton(Icons.calendar_today, "Add Event", AppColors.accent.withOpacity(0.3), () => _switchToSchedule(context)),
+            _buildActionButton(Icons.place, "Find Places", AppColors.primary, () => _switchToMap(context)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Individual quick action button
+  Widget _buildActionButton(IconData icon, String label, Color cardColor, VoidCallback onPressed) {
+    final color = getContrastColor(cardColor);
+    return Card(
+      elevation: 4,
+      color: cardColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppColors.accent, width: 2),
+      ),
+      child: TextButton(
+        style: TextButton.styleFrom(
+          padding: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        onPressed: onPressed,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 32, color: color),
+            const SizedBox(height: 8),
+            Text(label, textAlign: TextAlign.center, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Build the main dashboard content
   Widget _buildDashboardContent(String userName) {
     final sections = [
       {"title": "🐾 My Furry Friends", "child": _buildPetsSection(context), "bg": AppColors.primary},
@@ -99,34 +169,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
         SliverToBoxAdapter(
           child: Column(
             children: [
-              // 顶部欢迎区
+              // Top welcome section
               Container(
                 height: 180,
                 width: double.infinity,
                 color: AppColors.primary,
                 padding: const EdgeInsets.only(top: 20, left: 24, right: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Hello, $userName!",
-                      style: TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.background,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      "Welcome back to Pawradise",
-                      style: TextStyle(
-                        fontSize: 20,
-                        color: AppColors.background.withOpacity(0.8),
-                      ),
-                    ),
-                  ],
+                child: FutureBuilder<DocumentSnapshot>(
+                  future: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(FirebaseAuth.instance.currentUser?.uid)
+                      .get(),
+                  builder: (context, snapshot) {
+                    String displayName = "User";
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      displayName = "...";
+                    } else if (snapshot.hasData && snapshot.data!.exists) {
+                      final data = snapshot.data!.data() as Map<String, dynamic>;
+                      displayName = data['name'] ?? "User";
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Hello, $displayName!",
+                          style: TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          "Welcome back to Pawradise",
+                          style: TextStyle(
+                            fontSize: 20,
+                            color: AppColors.accent.withOpacity(0.5),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
+              // Dashboard content container with rounded corners and shadow
               Transform.translate(
                 offset: const Offset(0, -50),
                 child: Container(
@@ -148,7 +234,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      _buildQuickActions(context),
+                      _buildQuickActions(context), // Quick action buttons
                       const SizedBox(height: 24),
                       ...sections.map((s) => Padding(
                         padding: const EdgeInsets.only(bottom: 24),
@@ -173,56 +259,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // 修改后的 Section 容器
-Widget _buildSectionContainer({
-  required String title,
-  required Widget child,
-  required Color bgColor,
-}) {
-  return Container(
-    decoration: BoxDecoration(
-      color: bgColor, 
-      border: Border.all(color: AppColors.accent, width: 2),
-      borderRadius: BorderRadius.circular(20),
-    ),
-    padding: const EdgeInsets.all(12),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(title,
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: (title == "💌 Community Buzz" || title == "📍 Nearby Parks & Cafes")
-                    ? AppColors.background
-                    : AppColors.accent,
-                  fontFamily: 'ComicNeue',
-                )),
-            if (title != "🐾 My Furry Friends")
-              TextButton(
-                onPressed: () {
-                  if (title == "💌 Community Buzz") _switchToCommunity(context);
-                  if (title == "📅 PawSchedule") _switchToSchedule(context);
-                  if (title == "📍 Nearby Parks & Cafes") _switchToMap(context);
-                },
-                child: Text("See All",
-                    style: TextStyle(
-                        color: AppColors.background,
-                        fontWeight: FontWeight.bold)),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        child,
-      ],
-    ),
-  );
-}
+  // Build a generic section container with title and child content
+  Widget _buildSectionContainer({
+    required String title,
+    required Widget child,
+    required Color bgColor,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: bgColor, 
+        border: Border.all(color: AppColors.accent, width: 2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section header with optional "See All" button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: (title == "💌 Community Buzz" || title == "📍 Nearby Parks & Cafes")
+                      ? AppColors.background
+                      : AppColors.accent,
+                    fontFamily: 'ComicNeue',
+                  )),
+              if (title != "🐾 My Furry Friends")
+                TextButton(
+                  onPressed: () {
+                    if (title == "💌 Community Buzz") _switchToCommunity(context);
+                    if (title == "📅 PawSchedule") _switchToSchedule(context);
+                    if (title == "📍 Nearby Parks & Cafes") _switchToMap(context);
+                  },
+                  child: Text("See All",
+                      style: TextStyle(
+                          color: AppColors.background,
+                          fontWeight: FontWeight.bold)),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child, // Section content
+        ],
+      ),
+    );
+  }
 
-
+    // Pets section with horizontal scroll list
   Widget _buildPetsSection(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -254,51 +341,51 @@ Widget _buildSectionContainer({
     );
   }
 
-Widget _buildPetCard(Pet pet) {
-  return Card(
-    elevation: 3,
-    color: AppColors.accent.withOpacity(0.3), 
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(20),
-      side: BorderSide(color: AppColors.accent, width: 2),
-    ),
-    child: Container(
-      width: 130,
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: AppColors.secondary.withOpacity(0.9),
-            backgroundImage: (pet.imageUrl != null && pet.imageUrl!.isNotEmpty)
-                ? NetworkImage(pet.imageUrl!)
-                : null,
-            child: (pet.imageUrl == null || pet.imageUrl!.isEmpty)
-                ? Icon(Icons.pets, size: 32, color: AppColors.accent)
-                : null,
-          ),
-          const SizedBox(height: 8),
-          Text(pet.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: AppColors.secondary),
-              textAlign: TextAlign.center),
-          Text(pet.breed,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 12, color: AppColors.secondary),
-              textAlign: TextAlign.center),
-        ],
+  // Build individual pet card
+  Widget _buildPetCard(Pet pet) {
+    return Card(
+      elevation: 3,
+      color: AppColors.accent.withOpacity(0.3), 
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: AppColors.accent, width: 2),
       ),
-    ),
-  );
-}
+      child: Container(
+        width: 130,
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: AppColors.secondary.withOpacity(0.9),
+              backgroundImage: (pet.imageUrl != null && pet.imageUrl!.isNotEmpty)
+                  ? NetworkImage(pet.imageUrl!)
+                  : null,
+              child: (pet.imageUrl == null || pet.imageUrl!.isEmpty)
+                  ? Icon(Icons.pets, size: 32, color: AppColors.accent)
+                  : null,
+            ),
+            const SizedBox(height: 8),
+            Text(pet.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: AppColors.secondary),
+                textAlign: TextAlign.center),
+            Text(pet.breed,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, color: AppColors.secondary),
+                textAlign: TextAlign.center),
+          ],
+        ),
+      ),
+    );
+  }
 
-
-
+  // Build the "Add Pet" card
   Widget _buildAddPetCard(BuildContext context) {
     return Card(
       elevation: 4,
@@ -326,63 +413,12 @@ Widget _buildPetCard(Pet pet) {
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-
-        const SizedBox(height: 16),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: 1.8,
-          children: [
-            _buildActionButton(Icons.chat, "Ask PawPal", AppColors.primary, () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const AIChatScreen()));
-            }),
-            _buildActionButton(Icons.add_circle, "New Post", AppColors.accent.withOpacity(0.3), () => _switchToCommunity(context)),
-            _buildActionButton(Icons.calendar_today, "Add Event", AppColors.accent.withOpacity(0.3), () => _switchToSchedule(context)),
-            _buildActionButton(Icons.place, "Find Places", AppColors.primary, () => _switchToMap(context)),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButton(IconData icon, String label, Color cardColor, VoidCallback onPressed) {
-    final color = getContrastColor(cardColor);
-    return Card(
-      elevation: 4,
-      color: cardColor,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppColors.accent, width: 2),
-      ),
-      child: TextButton(
-        style: TextButton.styleFrom(
-          padding: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-        onPressed: onPressed,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 32, color: color),
-            const SizedBox(height: 8),
-            Text(label, textAlign: TextAlign.center, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 14)),
-          ],
-        ),
-      ),
-    );
-  }
-
+  // Switch tabs programmatically
   void _switchToCommunity(BuildContext context) => setState(() => _selectedIndex = 1);
   void _switchToSchedule(BuildContext context) => setState(() => _selectedIndex = 2);
   void _switchToMap(BuildContext context) => setState(() => _selectedIndex = 3);
 
+  // Community section preview (latest 3 posts)
   Widget _buildCommunityPreview(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('posts').orderBy('createdAt', descending: true).limit(3).snapshots(),
@@ -402,37 +438,38 @@ Widget _buildPetCard(Pet pet) {
     );
   }
 
-Widget _buildCommunityPost(String title, String likes, String postId) {
-  return Container(
-    margin: const EdgeInsets.symmetric(vertical: 6),
-    padding: const EdgeInsets.all(8),
-    decoration: BoxDecoration(
-      color: AppColors.primary.withOpacity(0.9), 
-      border: Border.all(color: AppColors.accent, width: 2),
-      borderRadius: BorderRadius.circular(25),
-    ),
-    child: ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(Icons.forum, color: AppColors.accent),
-      title: Text(title,
-          style: TextStyle(
-              color: AppColors.accent, fontWeight: FontWeight.w500)),
-      trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.favorite, color: AppColors.accent, size: 16),
-        const SizedBox(width: 4),
-        Text(likes,
+  // Individual community post card
+  Widget _buildCommunityPost(String title, String likes, String postId) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.9), 
+        border: Border.all(color: AppColors.accent, width: 2),
+        borderRadius: BorderRadius.circular(25),
+      ),
+      child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(Icons.forum, color: AppColors.accent),
+        title: Text(title,
             style: TextStyle(
-                color: AppColors.textSecondary.withOpacity(0.8), fontSize: 12)),
-      ]),
-      onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => PostDetailScreen(postId: postId))),
-    ),
-  );
-}
+                color: AppColors.accent, fontWeight: FontWeight.w500)),
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.favorite, color: AppColors.accent, size: 16),
+          const SizedBox(width: 4),
+          Text(likes,
+              style: TextStyle(
+                  color: AppColors.textSecondary.withOpacity(0.8), fontSize: 12)),
+        ]),
+        onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) => PostDetailScreen(postId: postId))),
+      ),
+    );
+  }
 
-
+  // Schedule section preview (next 3 events)
   Widget _buildSchedulePreview(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null)
@@ -485,6 +522,7 @@ Widget _buildCommunityPost(String title, String likes, String postId) {
     );
   }
 
+  // Nearby places preview (3 places with mini map)
   Widget _buildNearbyPlacesSection(BuildContext context) {
     return FutureBuilder<List<LocationModel>>(
       future: _fetchNearbyPlaces(),
@@ -509,13 +547,12 @@ Widget _buildCommunityPost(String title, String likes, String postId) {
           );
         }
 
-        // 取前 3 个
         final previewLocations = locations.take(3).toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 🔹 小地图（只展示前3个marker）
+            // Mini map showing markers
             SizedBox(
               height: 150,
               child: ClipRRect(
@@ -540,12 +577,10 @@ Widget _buildCommunityPost(String title, String likes, String postId) {
               ),
             ),
             const SizedBox(height: 12),
-
-            // 🔹 3个地点卡片
+            // Place cards
             ...previewLocations.map((loc) {
               return GestureDetector(
                 onTap: () {
-                  // 点击卡片 → 跳转到 MapScreen
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const MapScreen()),
@@ -584,8 +619,7 @@ Widget _buildCommunityPost(String title, String likes, String postId) {
     );
   }
 
-
-
+  // Fetch nearby dog-friendly places using GPS location
   Future<List<LocationModel>> _fetchNearbyPlaces() async {
     try {
       final loc = await Location().getLocation();
@@ -606,7 +640,7 @@ Widget _buildCommunityPost(String title, String likes, String postId) {
   }
 }
 
-// Google Map Widget
+// Google Map Widget for full map screen
 class GoogleMapWidget extends StatefulWidget {
   final List<LocationModel> locations;
   const GoogleMapWidget({super.key, required this.locations});
@@ -617,7 +651,6 @@ class GoogleMapWidget extends StatefulWidget {
 
 class _GoogleMapWidgetState extends State<GoogleMapWidget> {
   late GoogleMapController _mapController;
-  bool _isMapExpanded = true;
 
   @override
   Widget build(BuildContext context) {

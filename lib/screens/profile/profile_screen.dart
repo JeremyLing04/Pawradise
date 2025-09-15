@@ -12,7 +12,7 @@ import 'profile_pets_tab.dart';
 import 'profile_posts_tab.dart';
 
 class ProfileScreen extends StatefulWidget {
-  final String? userId; // 可为null，表示当前用户
+  final String? userId; // null = current user
   final bool isCurrentUser;
 
   const ProfileScreen({
@@ -32,13 +32,13 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   late TabController _tabController;
   String? _displayUserId;
   
-  // 用户信息
+  // User info
   String _name = "";
-  String _username = ""; // 新增username字段
+  String _username = "";
   String? _userAvatarUrl;
   String _userBio = "";
   
-  // 统计数据
+  // Stats
   int _postsCount = 0;
   int _followingCount = 0;
   int _followersCount = 0;
@@ -47,20 +47,22 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
   @override
   void initState() {
     super.initState();
-    
     _tabController = TabController(length: 2, vsync: this);
+
     _determineUserId();
     _loadUserData();
     _loadStats();
     _checkFollowStatus();
   }
 
+  // Determine which user profile to display
   void _determineUserId() {
     setState(() {
       _displayUserId = widget.userId ?? _auth.currentUser?.uid;
     });
   }
 
+  // Load user basic data from Firestore
   Future<void> _loadUserData() async {
     if (_displayUserId == null) return;
     
@@ -74,7 +76,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
         final data = userDoc.data();
         setState(() {
           _name = data?['name'] ?? data?['username'] ?? 'User';
-          _username = data?['username'] ?? 'User'; // 获取username字段
+          _username = data?['username'] ?? 'User';
           _userAvatarUrl = data?['avatarUrl'];
           _userBio = data?['bio'] ?? "";
         });
@@ -84,6 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     }
   }
 
+  // Load post count and follow/follower counts
   Future<void> _loadStats() async {
     if (_displayUserId == null) return;
     
@@ -107,6 +110,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     }
   }
 
+  // Check if current user is following the displayed user
   Future<void> _checkFollowStatus() async {
     final currentUser = _auth.currentUser;
     if (currentUser != null && _displayUserId != null && 
@@ -122,6 +126,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     }
   }
 
+  // Toggle follow/unfollow action
   Future<void> _toggleFollow() async {
     final currentUser = _auth.currentUser;
     if (currentUser == null || _displayUserId == null || 
@@ -140,12 +145,12 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('操作失败: $e')),
+        SnackBar(content: Text('Action failed: $e')),
       );
     }
   }
 
-  // 添加刷新方法
+  // Refresh profile data
   void _refreshProfileData() {
     _loadUserData();
     _loadStats();
@@ -187,7 +192,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       backgroundColor: AppColors.secondary,
       body: Column(
         children: [
-          // 用户信息头部
+          // Profile header with avatar, name, bio, stats
           ProfileHeader(
             userId: _displayUserId!,
             name: _name,
@@ -199,16 +204,16 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             followersCount: _followersCount,
             onFollowPressed: isOwnProfile ? null : _toggleFollow,
             isFollowing: _isFollowing,
-            onProfileUpdated: _refreshProfileData, // 传递刷新回调
+            onProfileUpdated: _refreshProfileData, // callback for refresh
           ),
           
-          // 标签栏
+          // Tab bar for Pets / Posts
           Container(
             color: AppColors.primary,
             child: TabBar(
               controller: _tabController,
-              indicatorColor: AppColors.secondary,
-              labelColor: AppColors.secondary,
+              indicatorColor: AppColors.background,
+              labelColor: AppColors.background,
               unselectedLabelColor: AppColors.accent,
               tabs: [
                 Tab(text: 'Pets'),
@@ -217,110 +222,19 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             ),
           ),
           
-          // 内容区域
+          // Tab views
           Expanded(
             child: Container(
               color: AppColors.secondary,
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  // 宠物标签
                   ProfilePetsTab(userId: _displayUserId!, isOwnProfile: isOwnProfile),
-                  
-                  // 帖子标签
                   ProfilePostsTab(userId: _displayUserId!),
                 ],
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsSection() {
-    return Container(
-      padding: EdgeInsets.symmetric(vertical: 16),
-      color: AppColors.primary,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatItem('Posts', _postsCount),
-          _buildStatItem('Following', _followingCount),
-          _buildStatItem('Followers', _followersCount),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String label, int count) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          count.toString(),
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.secondary,
-          ),
-        ),
-        SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: AppColors.accent,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Padding(
-      padding: EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: _toggleFollow,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isFollowing ? Colors.grey : Colors.green,
-                foregroundColor: Colors.white,
-              ),
-              child: Text(_isFollowing ? 'Following' : 'Follow'),
-            ),
-          ),
-          SizedBox(width: 12),
-          Expanded(
-            child: OutlinedButton(
-              onPressed: () {},
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: Colors.green),
-              ),
-              child: Text(
-                'Message',
-                style: TextStyle(color: Colors.green),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTabBar() {
-    return Container(
-      color: AppColors.primary,
-      child: TabBar(
-        controller: _tabController,
-        indicatorColor: AppColors.secondary,
-        labelColor: AppColors.secondary,
-        unselectedLabelColor: AppColors.accent,
-        tabs: [
-          Tab(text: 'Pets'),
-          Tab(text: 'Posts'),
         ],
       ),
     );

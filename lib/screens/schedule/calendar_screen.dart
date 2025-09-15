@@ -19,22 +19,23 @@ class CalendarView extends StatefulWidget {
 }
 
 class _CalendarViewState extends State<CalendarView> {
-  DateTime _focusedDay = DateTime.now();
-  DateTime? _selectedDay;
-  CalendarFormat _calendarFormat = CalendarFormat.month;
+  DateTime _focusedDay = DateTime.now(); // Currently focused calendar day
+  DateTime? _selectedDay; // Selected day
+  CalendarFormat _calendarFormat = CalendarFormat.month; // Calendar format
 
   @override
   void initState() {
     super.initState();
-    _loadEvents();
+    _loadEvents(); // Load user events on init
   }
 
+  // Load events for current user
   Future<void> _loadEvents() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       final eventProvider = Provider.of<EventProvider>(context, listen: false);
-      await eventProvider.loadEvents(user.uid);
-      await eventProvider.loadJoinedEvents(user.uid); // 加载加入的事件
+      await eventProvider.loadEvents(user.uid);       // Load user's own events
+      await eventProvider.loadJoinedEvents(user.uid); // Load joined events
     }
   }
 
@@ -43,7 +44,14 @@ class _CalendarViewState extends State<CalendarView> {
     return Scaffold(
       backgroundColor: AppColors.accent.withOpacity(0.5),
       appBar: AppBar(
-        title: const Text('PawSchedule'),
+        title: Text(
+          'PawSchedule',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+            color: AppColors.background,
+          ),
+        ),
         centerTitle: true,
         elevation: 4,
         backgroundColor: AppColors.primary,
@@ -66,7 +74,7 @@ class _CalendarViewState extends State<CalendarView> {
         decoration: BoxDecoration(
           color: AppColors.secondary,
           borderRadius: BorderRadius.circular(50),
-          border: Border.all( 
+          border: Border.all(
             color: AppColors.accent,
             width: 2,
           ),
@@ -78,10 +86,9 @@ class _CalendarViewState extends State<CalendarView> {
             ),
           ],
         ),
-
-        //calendar
         child: Column(
           children: [
+            // Calendar widget
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: TableCalendar(
@@ -100,15 +107,12 @@ class _CalendarViewState extends State<CalendarView> {
                   }
                 },
                 onFormatChanged: (format) {
-                  setState(() {
-                    _calendarFormat = format;
-                  });
+                  setState(() => _calendarFormat = format);
                 },
                 onPageChanged: (focusedDay) {
                   _focusedDay = focusedDay;
                 },
                 eventLoader: (day) => _getEventsForDay(day, context),
-
                 calendarStyle: CalendarStyle(
                   todayDecoration: BoxDecoration(
                     color: AppColors.accent.withOpacity(0.7),
@@ -138,10 +142,10 @@ class _CalendarViewState extends State<CalendarView> {
             Divider(
               thickness: 1,
               height: 1,
-              color: AppColors.accent, 
+              color: AppColors.accent,
             ),
 
-            // list of events
+            // Event list for selected day
             Expanded(
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
@@ -156,6 +160,7 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
+  // Navigate to reminders view
   void _showRemindersView(BuildContext context) {
     Navigator.push(
       context,
@@ -163,6 +168,7 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
+  // Get all events for a specific day
   List<Event> _getEventsForDay(DateTime day, BuildContext context) {
     final eventProvider = Provider.of<EventProvider>(context, listen: false);
     return eventProvider.events
@@ -170,6 +176,7 @@ class _CalendarViewState extends State<CalendarView> {
         .toList();
   }
 
+  // Build event list UI
   Widget _buildEventList() {
     if (_selectedDay == null) {
       return const Center(
@@ -207,21 +214,22 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
+  // Build individual event item UI
   Widget _buildEventItem(Event event, BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-        color: AppColors.primary, 
-        border: Border.all( 
-          color: AppColors.accent, 
+        color: AppColors.primary,
+        border: Border.all(
+          color: AppColors.accent,
           width: 2,
-      ),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.15),
             blurRadius: 8,
-            offset: Offset(2, 4),
+            offset: const Offset(2, 4),
           ),
         ],
       ),
@@ -259,6 +267,7 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
+  // Toggle event completion status
   void _toggleEventCompletion(
     Event event,
     bool completed,
@@ -283,6 +292,7 @@ class _CalendarViewState extends State<CalendarView> {
     ).updateEvent(updatedEvent);
   }
 
+  // Show event details in dialog
   void _showEventDetails(Event event, BuildContext context) {
     showDialog(
       context: context,
@@ -291,9 +301,9 @@ class _CalendarViewState extends State<CalendarView> {
           backgroundColor: AppColors.secondary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(25),
-            side: BorderSide( 
-            color: AppColors.accent,
-            width: 2,
+            side: BorderSide(
+              color: AppColors.accent,
+              width: 2,
             ),
           ),
           title: Text(event.title, style: TextStyle(color: AppColors.accent)),
@@ -334,6 +344,7 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
+  // Edit event
   void _editEvent(Event event, BuildContext context) {
     showDialog(
       context: context,
@@ -343,6 +354,7 @@ class _CalendarViewState extends State<CalendarView> {
     );
   }
 
+  // Delete event
   void _deleteEvent(Event event, BuildContext context) {
     showDialog(
       context: context,

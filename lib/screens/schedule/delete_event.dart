@@ -13,10 +13,12 @@ class DeleteEventDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.secondary, // 背景主题色
+      // Dialog background color
+      backgroundColor: AppColors.secondary,
+      // Rounded border with accent color
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: AppColors.accent, width: 2), // 边框
+        side: BorderSide(color: AppColors.accent, width: 2),
       ),
       title: Center(
         child: Text(
@@ -33,7 +35,7 @@ class DeleteEventDialog extends StatelessWidget {
       ),
       actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       actions: [
-        // cancel 按钮
+        // Cancel button
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Text(
@@ -41,7 +43,7 @@ class DeleteEventDialog extends StatelessWidget {
             style: TextStyle(color: AppColors.textSecondary),
           ),
         ),
-        // delete 按钮（红色更突出危险操作）
+        // Delete button (red to indicate danger)
         ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color.fromARGB(255, 221, 133, 127),
@@ -50,11 +52,14 @@ class DeleteEventDialog extends StatelessWidget {
             ),
           ),
           onPressed: () {
+            // Get current user ID
             final userId = FirebaseAuth.instance.currentUser!.uid;
+            // Call provider to delete event
             Provider.of<EventProvider>(
               context,
               listen: false,
             ).deleteEvent(event.id, userId);
+            // Close dialog
             Navigator.pop(context);
           },
           child: const Text('Delete'),

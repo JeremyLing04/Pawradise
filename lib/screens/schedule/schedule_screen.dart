@@ -16,43 +16,49 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
+  // Currently selected date on the calendar
   DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize notification service
+    // Initialize time zones and notification service
     tz.initializeTimeZones();
     NotificationService().initialize();
 
+    // Load user events after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-    final userId = FirebaseAuth.instance.currentUser!.uid;
-    final eventProvider = Provider.of<EventProvider>(context, listen: false);
-    eventProvider.initialize(userId);
+      final userId = FirebaseAuth.instance.currentUser!.uid;
+      final eventProvider = Provider.of<EventProvider>(context, listen: false);
+      eventProvider.initialize(userId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Only show the calendar view
       body: CalendarView(
         onDateSelected: (date) {
           setState(() {
-            _selectedDate = date; 
+            _selectedDate = date;
           });
         },
-      ), // 只显示日历视图
+      ),
+      // Floating action button to add new event
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddEventDialog(context),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.accent,
+        backgroundColor: AppColors.accent.withOpacity(0.7),
+        foregroundColor: AppColors.background,
+        shape: const CircleBorder(), // Ensures perfect circle
         child: const Icon(Icons.add),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
+  // Show dialog to add a new event on the selected date
   void _showAddEventDialog(BuildContext context) {
     showDialog(
       context: context,

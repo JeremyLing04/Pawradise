@@ -3,13 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class ChatRoom {
   final String id;
   final List<String> participantIds;
-  final Map<String, String> participantNames; // 改为 Map 类型
+  final Map<String, String> participantNames; 
   final String lastMessage;
-  final String lastMessageType; // 新增：最后消息类型
+  final String lastMessageType; 
   final Timestamp lastMessageTime;
   final int unreadCount;
   final String lastMessageSenderId;
-  final Timestamp createdAt; // 新增：创建时间
+  final Timestamp createdAt; 
 
   ChatRoom({
     required this.id,
@@ -26,14 +26,12 @@ class ChatRoom {
   factory ChatRoom.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
     
-    // 处理 participantNames，兼容旧数据格式
     Map<String, String> participantNamesMap = {};
     final participantNamesData = data['participantNames'];
     
     if (participantNamesData is Map) {
       participantNamesMap = Map<String, String>.from(participantNamesData);
     } else if (participantNamesData is List) {
-      // 兼容旧格式：List<String>
       final participantIds = List<String>.from(data['participantIds'] ?? []);
       final namesList = List<String>.from(participantNamesData);
       for (int i = 0; i < participantIds.length && i < namesList.length; i++) {
@@ -67,7 +65,6 @@ class ChatRoom {
     };
   }
 
-  // 获取对方用户ID（当前用户以外的参与者）
   String getOtherUserId(String currentUserId) {
     return participantIds.firstWhere(
       (id) => id != currentUserId,
@@ -75,13 +72,10 @@ class ChatRoom {
     );
   }
 
-  // 获取对方用户名
   String getOtherUserName(String currentUserId) {
     final otherUserId = getOtherUserId(currentUserId);
     return participantNames[otherUserId] ?? 'Unknown';
   }
-
-  // 检查是否是未读消息（来自对方）
   bool hasUnreadMessages(String currentUserId) {
     return unreadCount > 0 && lastMessageSenderId != currentUserId;
   }
@@ -93,9 +87,9 @@ class ChatMessage {
   final String senderId;
   final String senderName;
   final String content;
-  final String type; // 消息类型：text, image
+  final String type;
   final Timestamp timestamp;
-  final bool read; // 新增：已读状态
+  final bool read; 
 
   ChatMessage({
     required this.id,
@@ -133,19 +127,14 @@ class ChatMessage {
     };
   }
 
-  // 辅助方法：检查是否是图片消息
   bool get isImage => type == 'image';
 
-  // 辅助方法：检查是否是文本消息
   bool get isText => type == 'text';
 
-  // 辅助方法：检查消息是否已读
   bool get isRead => read;
 
-  // 辅助方法：获取发送时间
   DateTime get sentTime => timestamp.toDate();
 
-  // 辅助方法：格式化时间显示
   String formatTime() {
     final date = timestamp.toDate();
     final now = DateTime.now();

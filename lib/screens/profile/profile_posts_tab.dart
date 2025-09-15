@@ -17,29 +17,39 @@ class ProfilePostsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
+      // Listen to posts authored by this user
       stream: FirebaseFirestore.instance
           .collection('posts')
           .where('authorId', isEqualTo: userId)
           .orderBy('createdAt', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
+        // Loading indicator while fetching posts
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator(color: AppColors.accent));
         }
         
+        // Display error if failed to load
         if (snapshot.hasError) {
           return Center(child: Text('Error loading posts'));
         }
         
         final posts = snapshot.data?.docs ?? [];
         
+        // Show empty state if no posts
         if (posts.isEmpty) {
           return Center(child: Text('No posts yet'));
         }
         
-        return ListView.builder(
+        // List of posts
+        return ListView.separated(
           padding: EdgeInsets.all(16),
           itemCount: posts.length,
+          separatorBuilder: (context, index) => Divider(
+            color: AppColors.accent.withOpacity(0.4), 
+            thickness: 2, 
+            height: 24, 
+          ),
           itemBuilder: (context, index) {
             final doc = posts[index];
             try {
@@ -54,6 +64,7 @@ class ProfilePostsTab extends StatelessWidget {
                 ),
               );
             } catch (e) {
+              // Fallback if post parsing fails
               return ListTile(
                 title: Text('Error loading post'),
                 subtitle: Text('ID: ${doc.id}'),

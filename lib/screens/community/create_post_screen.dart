@@ -11,6 +11,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../services/places_service.dart'; // Add this import
 import 'dart:async'; // Add this import
+import '../../constants.dart';
 
 class CreatePostScreen extends StatefulWidget {
   final LocationModel? sharedLocation;
@@ -60,10 +61,22 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('New Post'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
+      backgroundColor: AppColors.secondary,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+          child: AppBar(
+            title: const Text(
+              'New Post',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            centerTitle: true,
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.background,
+            elevation: 2,
+          ),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -74,9 +87,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               // Post type selection
               DropdownButtonFormField<String>(
                 value: _selectedType,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Post Category',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.background.withOpacity(0.5),
                 ),
                 items: _postTypes.map((type) {
                   return DropdownMenuItem<String>(
@@ -95,14 +117,21 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               // Title input
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Title',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.background.withOpacity(0.5),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please input title';
-                  }
+                  if (value == null || value.isEmpty) return 'Please input title';
                   return null;
                 },
               ),
@@ -111,16 +140,23 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               // Content input
               TextFormField(
                 controller: _contentController,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Content',
-                  border: OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.background.withOpacity(0.5),
                   alignLabelWithHint: true,
                 ),
                 maxLines: 5,
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please input content';
-                  }
+                  if (value == null || value.isEmpty) return 'Please input content';
                   return null;
                 },
               ),
@@ -141,11 +177,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _createPost,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.accent.withOpacity(0.9),
+                    foregroundColor: AppColors.background,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
+                      ? CircularProgressIndicator(color: AppColors.background)
                       : const Text('Create Post'),
                 ),
               ),
@@ -540,13 +577,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       children: [
         const Text(
           'Keywords',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
-        
         Row(
           children: [
             Expanded(
@@ -554,9 +587,18 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 controller: _keywordController,
                 decoration: InputDecoration(
                   hintText: 'Add keyword...',
-                  border: const OutlineInputBorder(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: AppColors.accent, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: AppColors.background.withOpacity(0.5),
                   suffixIcon: IconButton(
-                    icon: const Icon(Icons.add, color: Colors.green),
+                    icon: Icon(Icons.add, color: AppColors.accent),
                     onPressed: _addKeyword,
                   ),
                 ),
@@ -567,11 +609,9 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             ElevatedButton(
               onPressed: _addKeyword,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                backgroundColor: AppColors.accent.withOpacity(0.9),
+                foregroundColor: AppColors.background,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               ),
               child: const Text('Add'),
@@ -579,7 +619,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           ],
         ),
         const SizedBox(height: 12),
-        
         if (_keywords.isNotEmpty)
           Wrap(
             spacing: 8,
@@ -587,24 +626,23 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
             children: _keywords.map((keyword) {
               return Chip(
                 label: Text(keyword),
-                backgroundColor: Colors.green[50],
+                backgroundColor: AppColors.accent.withOpacity(0.1),
                 deleteIcon: const Icon(Icons.close, size: 16),
                 onDeleted: () => _removeKeyword(keyword),
-                labelStyle: const TextStyle(color: Colors.green),
+                labelStyle: TextStyle(color: AppColors.accent),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: Colors.green[300]!),
+                  side: BorderSide(color: AppColors.accent.withOpacity(0.5)),
                 ),
               );
             }).toList(),
           ),
-        
         if (_keywords.isEmpty)
           Text(
             'Add keywords to help others find your post',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: AppColors.textSecondary,
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -635,10 +673,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
     try {
       final user = FirebaseAuth.instance.currentUser!;
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
 
       String imageUrl = '';
       bool hasImage = false;
@@ -682,9 +717,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Post Failed: $e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Post Failed: $e')));
     } finally {
       setState(() {
         _isLoading = false;
@@ -718,7 +751,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                     backgroundColor: Colors.black54,
                     child: IconButton(
                       onPressed: () => setState(() => _selectedImage = null),
-                      icon: const Icon(Icons.close, size: 16, color: Colors.white),
+                      icon: Icon(Icons.close, size: 16, color: AppColors.background),
                     ),
                   ),
                 ),
@@ -729,11 +762,11 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           width: double.infinity,
           child: OutlinedButton.icon(
             onPressed: _pickImage,
-            icon: const Icon(Icons.camera_alt),
-            label: const Text("Select Image"),
+            icon: Icon(Icons.camera_alt, color: AppColors.accent),
+            label: Text("Select Image", style: TextStyle(color: AppColors.accent)),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
-              side: BorderSide(color: Colors.green),
+              side: BorderSide(color: AppColors.accent),
             ),
           ),
         ),
@@ -772,12 +805,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     try {
       final user = FirebaseAuth.instance.currentUser!;
       final String fileName = 'posts/${user.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      
+
       final Reference storageRef = FirebaseStorage.instance.ref().child(fileName);
       final UploadTask uploadTask = storageRef.putFile(imageFile);
       final TaskSnapshot snapshot = await uploadTask;
       final String downloadUrl = await snapshot.ref.getDownloadURL();
-      
+
       return downloadUrl;
     } catch (e) {
       print('Upload Error: $e');

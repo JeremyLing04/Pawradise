@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'widgets/post_card.dart';
 import '../../models/post_model.dart';
-import '../../models/user_model.dart' as app_model; // 添加别名
+import '../../models/user_model.dart' as app_model;
 import 'post_detail_screen.dart';
 import '../profile/profile_screen.dart';
+import '../../constants.dart';
+import 'widgets/post_card.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -19,14 +19,10 @@ class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String _searchQuery = '';
-  String _selectedCategory = 'posts'; // 'posts' 或 'users'
+  String _selectedCategory = 'posts';
 
-  // 搜索帖子
   Stream<QuerySnapshot> _searchPosts(String query) {
-    if (query.isEmpty) {
-      return const Stream.empty();
-    }
-
+    if (query.isEmpty) return const Stream.empty();
     return FirebaseFirestore.instance
         .collection('posts')
         .where('keywords', arrayContains: query.toLowerCase())
@@ -34,22 +30,16 @@ class _SearchScreenState extends State<SearchScreen> {
         .snapshots();
   }
 
-  // 搜索用户
   Stream<QuerySnapshot> _searchUsers(String query) {
-    if (query.isEmpty) {
-      return const Stream.empty();
-    }
-
+    if (query.isEmpty) return const Stream.empty();
     return FirebaseFirestore.instance
         .collection('users')
         .where('searchKeywords', arrayContains: query.toLowerCase())
         .snapshots();
   }
 
-  // 构建搜索建议
   Widget _buildSearchSuggestions() {
-    final suggestions = ['Flutter', 'Dart', '宠物', '医疗', '活动', '讨论'];
-    
+    final suggestions = ['Flutter', 'Dart', 'Pets', 'Medical', 'Events', 'Discussion'];
     return Wrap(
       spacing: 8,
       runSpacing: 8,
@@ -62,13 +52,14 @@ class _SearchScreenState extends State<SearchScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: AppColors.accent.withOpacity(0.3),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.grey[300]!),
+              border: Border.all(color: AppColors.accent, width: 2),
             ),
+            alignment: Alignment.center,
             child: Text(
               suggestion,
-              style: const TextStyle(color: Colors.grey),
+              style: TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold),
             ),
           ),
         );
@@ -77,9 +68,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _performSearch(String query) {
-    setState(() {
-      _searchQuery = query;
-    });
+    setState(() => _searchQuery = query);
   }
 
   void _clearSearch() {
@@ -92,79 +81,72 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('搜索'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-      ),
+      backgroundColor: AppColors.secondary,
       body: Column(
         children: [
-          // 搜索框
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+            child: AppBar(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.background,
+              title: const Text('Search', style: TextStyle(fontWeight: FontWeight.bold)),
+              centerTitle: true,
+            ),
+          ),
+
+          // Search box
           Padding(
             padding: const EdgeInsets.all(16),
             child: TextField(
               controller: _searchController,
               focusNode: _searchFocusNode,
               decoration: InputDecoration(
-                hintText: '搜索帖子或用户...',
+                hintText: 'Search posts or users...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: _clearSearch,
-                      )
+                    ? IconButton(icon: const Icon(Icons.clear), onPressed: _clearSearch)
                     : null,
+                filled: true,
+                fillColor: AppColors.primary.withOpacity(0.7),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                    borderRadius: BorderRadius.circular(12), borderSide:  BorderSide(color: AppColors.accent, width: 2)),
               ),
               onSubmitted: _performSearch,
             ),
           ),
 
-          // 分类筛选
+          // Category buttons
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                _buildCategoryButton('帖子', 'posts'),
+                _buildCategoryButton('Posts', 'posts'),
                 const SizedBox(width: 12),
-                _buildCategoryButton('用户', 'users'),
+                _buildCategoryButton('Users', 'users'),
               ],
             ),
           ),
-
           const SizedBox(height: 16),
 
-          // 搜索建议（当没有搜索时显示）
-          if (_searchQuery.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '热门搜索',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+          // Search suggestions or results
+          Expanded(
+            child: _searchQuery.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Popular Searches',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 12),
+                        _buildSearchSuggestions(),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildSearchSuggestions(),
-                ],
-              ),
-            ),
-
-          // 搜索结果
-          if (_searchQuery.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Expanded(
-              child: _selectedCategory == 'posts'
-                  ? _buildPostsResults()
-                  : _buildUsersResults(),
-            ),
-          ],
+                  )
+                : _selectedCategory == 'posts'
+                    ? _buildPostsResults()
+                    : _buildUsersResults(),
+          ),
         ],
       ),
     );
@@ -174,19 +156,14 @@ class _SearchScreenState extends State<SearchScreen> {
     final isSelected = _selectedCategory == value;
     return Expanded(
       child: ElevatedButton(
-        onPressed: () {
-          setState(() {
-            _selectedCategory = value;
-          });
-        },
+        onPressed: () => setState(() => _selectedCategory = value),
         style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected ? Colors.green : Colors.grey[200],
-          foregroundColor: isSelected ? Colors.white : Colors.grey[700],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          backgroundColor: isSelected ? AppColors.accent.withOpacity(0.2) :  AppColors.secondary.withOpacity(0.7),
+          foregroundColor: isSelected ? AppColors.background : AppColors.accent,
+          side: BorderSide(color: AppColors.accent, width: 2),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        child: Text(label),
+        child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -195,45 +172,22 @@ class _SearchScreenState extends State<SearchScreen> {
     return StreamBuilder<QuerySnapshot>(
       stream: _searchPosts(_searchQuery),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(child: Text('错误: ${snapshot.error}'));
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
+        if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.search_off, size: 48, color: Colors.grey),
-                const SizedBox(height: 16),
-                Text(
-                  '没有找到关于"$_searchQuery"的帖子',
-                  style: const TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-              ],
-            ),
-          );
+          return _buildEmptyState('No posts found for "$_searchQuery"', Icons.search_off);
         }
-
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           itemCount: snapshot.data!.docs.length,
           itemBuilder: (context, index) {
             final doc = snapshot.data!.docs[index];
             final post = PostModel.fromFireStore(doc);
-            
             return PostCard(
               post: post,
               onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => PostDetailScreen(postId: doc.id),
-                ),
-              ),
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => PostDetailScreen(postId: doc.id))),
             );
           },
         );
@@ -245,55 +199,57 @@ class _SearchScreenState extends State<SearchScreen> {
     return StreamBuilder<QuerySnapshot>(
       stream: _searchUsers(_searchQuery),
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(child: Text('错误: ${snapshot.error}'));
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
+        if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.person_off, size: 48, color: Colors.grey),
-                const SizedBox(height: 16),
-                Text(
-                  '没有找到关于"$_searchQuery"的用户',
-                  style: const TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-              ],
-            ),
-          );
+          return _buildEmptyState('No users found for "$_searchQuery"', Icons.person_off);
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           itemCount: snapshot.data!.docs.length,
           itemBuilder: (context, index) {
             final doc = snapshot.data!.docs[index];
-            final user = app_model.User.fromFirestore(doc); // 使用别名
-            
-            return ListTile(
-              leading: CircleAvatar(
-                radius: 24,
-                backgroundColor: Colors.grey[300],
-                child: const Icon(Icons.person, color: Colors.grey),
-              ),
-              title: Text(user.username),
-              subtitle: Text(user.email),
+            final user = app_model.User.fromFirestore(doc);
+            return GestureDetector(
               onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ProfileScreen(userId: user.id),
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => ProfileScreen(userId: user.id))),
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.accent, width: 2),
+                ),
+                child: ListTile(
+                  leading: CircleAvatar(
+                      radius: 24,
+                      backgroundColor: Colors.grey[300],
+                      child: const Icon(Icons.person, color: Colors.grey)),
+                  title: Text(user.username),
+                  subtitle: Text(user.email),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 ),
               ),
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildEmptyState(String text, IconData icon) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 48, color: Colors.grey),
+          const SizedBox(height: 16),
+          Text(text, style: const TextStyle(fontSize: 16, color: Colors.grey)),
+        ],
+      ),
     );
   }
 
